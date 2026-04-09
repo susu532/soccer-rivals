@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-vibrant-pink: #ff007f;
+  --color-vibrant-cyan: #00ffff;
+  --color-vibrant-yellow: #ffff00;
+  --color-vibrant-purple: #9d00ff;
+  --color-vibrant-orange: #ff8c00;
+  --color-vibrant-green: #39ff14;
+  --color-soft-blue: #87ceeb;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-white overflow-hidden;
+  }
+}
+
+@keyframes gridScroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(50px); }
+}
+
+.animate-grid {
+  background-image: linear-gradient(to right, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridScroll 2s linear infinite;
+}
+
+.glass {
+  @apply bg-white/10 backdrop-blur-xl border border-white/20;
+}
+
+.glass-dark {
+  @apply bg-black/40 backdrop-blur-xl border border-white/10;
+}
+
+.pulse-primary {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}

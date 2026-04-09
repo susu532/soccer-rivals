@@ -1,0 +1,26 @@
+services:
+  # USA East Backend
+  - type: web
+    name: soccer-rivals-usa
+    env: node
+    region: ohio # US East
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+  # Europe Frankfurt Backend
+  - type: web
+    name: soccer-rivals-eu
+    env: node
+    region: frankfurt # Europe Frankfurt
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
