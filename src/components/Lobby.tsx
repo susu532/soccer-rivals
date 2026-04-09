@@ -98,6 +98,9 @@ export function Lobby() {
         <p className="text-[8px] md:text-[10px] text-white/30 font-black italic uppercase tracking-widest">
           © 2026 hentertrabelsi - All Rights Reserved
         </p>
+         <p className="text-[8px] md:text-[10px] text-white/30 font-black italic uppercase tracking-widest">
+          Discord: #susuxo
+        </p>
       </div>
       
       {/* Top Left: Settings & Region */}
