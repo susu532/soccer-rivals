@@ -164,28 +164,6 @@ export function Field() {
         </mesh>
       </group>
 
-      {/* Corner Bumpers */}
-      {/* Top Left */}
-      <mesh position={[-fieldWidth / 2 + 4, 2, -fieldLength / 2 + 4]} receiveShadow castShadow>
-        <cylinderGeometry args={[4, 4, 4, 16]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.8} />
-      </mesh>
-      {/* Top Right */}
-      <mesh position={[fieldWidth / 2 - 4, 2, -fieldLength / 2 + 4]} receiveShadow castShadow>
-        <cylinderGeometry args={[4, 4, 4, 16]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.8} />
-      </mesh>
-      {/* Bottom Left */}
-      <mesh position={[-fieldWidth / 2 + 4, 2, fieldLength / 2 - 4]} receiveShadow castShadow>
-        <cylinderGeometry args={[4, 4, 4, 16]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.8} />
-      </mesh>
-      {/* Bottom Right */}
-      <mesh position={[fieldWidth / 2 - 4, 2, fieldLength / 2 - 4]} receiveShadow castShadow>
-        <cylinderGeometry args={[4, 4, 4, 16]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.8} />
-      </mesh>
-
       {/* Goals */}
       {/* Blue Team Goal (North) */}
       <group position={[0, 0, -fieldLength / 2]}>
