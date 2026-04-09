@@ -3,6 +3,7 @@ services:
   - type: web
     name: soccer-rivals-usa
     env: node
+    rootDir: server
     region: ohio # US East
     buildCommand: npm install && npm run build
     startCommand: npm start
@@ -16,6 +17,7 @@ services:
   - type: web
     name: soccer-rivals-eu
     env: node
+    rootDir: server
     region: frankfurt # Europe Frankfurt
     buildCommand: npm install && npm run build
     startCommand: npm start
