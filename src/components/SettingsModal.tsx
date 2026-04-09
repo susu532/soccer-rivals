@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Volume2, Monitor, Keyboard, Globe, Check, RotateCcw } from 'lucide-react';
 import { useGameStore } from '../store';
@@ -210,3 +219,8 @@ export function SettingsModal({ isOpen, onClose, minimal = false }: SettingsModa
     </AnimatePresence>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

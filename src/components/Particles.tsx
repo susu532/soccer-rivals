@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -127,3 +136,8 @@ export function BurstEffect({ position, color = '#ffffff', count = 20, trigger =
     </instancedMesh>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

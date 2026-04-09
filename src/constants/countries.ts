@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 export const WORLD_CUP_COUNTRIES = [
   // Hosts
   { name: 'USA', code: 'us', flag: 'https://flagcdn.com/w80/us.png', color: '#3C3B6E' },
@@ -61,3 +70,8 @@ export const WORLD_CUP_COUNTRIES = [
   // OFC
   { name: 'New Zealand', code: 'nz', flag: 'https://flagcdn.com/w80/nz.png', color: '#00247D' },
 ];
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

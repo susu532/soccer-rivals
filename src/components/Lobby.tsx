@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { useRef, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, useAnimations, Environment, Float, ContactShadows } from '@react-three/drei';
@@ -83,6 +92,13 @@ export function Lobby() {
       {/* Floating Blobs for playfulness */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-vibrant-cyan/20 blur-[100px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-vibrant-yellow/20 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      {/* Bottom Left: Copyright */}
+      <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 z-50 pointer-events-none">
+        <p className="text-[8px] md:text-[10px] text-white/30 font-black italic uppercase tracking-widest">
+          © 2026 hentertrabelsi - All Rights Reserved
+        </p>
+      </div>
       
       {/* Top Left: Settings & Region */}
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-50 flex gap-2">
@@ -539,3 +555,8 @@ export function Lobby() {
     </div>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

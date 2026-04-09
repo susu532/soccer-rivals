@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Sky, Environment, Html } from '@react-three/drei';
@@ -213,3 +222,8 @@ export function Scene() {
     </Canvas>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

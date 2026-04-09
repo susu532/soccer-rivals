@@ -3,6 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "license": "UNLICENSED",
+  "author": {
+    "name": "hentertrabelsi",
+    "email": "hentertrabelsi@gmail.com",
+    "url": "discord:#susuxo"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

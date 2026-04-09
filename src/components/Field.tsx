@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { Box, Cylinder } from '@react-three/drei';
 import { useMemo } from 'react';
 import * as THREE from 'three';
@@ -238,3 +247,8 @@ export function Field() {
     </group>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

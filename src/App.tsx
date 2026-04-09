@@ -1,6 +1,11 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
  */
 
 import { useEffect, useState, useRef } from 'react';
@@ -553,3 +558,8 @@ export default function App() {
     </div>
   );
 }
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */
+

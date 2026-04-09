@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { motion } from 'motion/react';
 import { PlayerState, useGameStore } from '../store';
 import { Trophy, Target, Zap, MousePointer2 } from 'lucide-react';
@@ -128,3 +137,8 @@ export function Scoreboard({ players }: ScoreboardProps) {
     </motion.div>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

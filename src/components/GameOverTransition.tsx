@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { motion } from 'motion/react';
 import { Trophy, Home } from 'lucide-react';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
@@ -111,3 +120,8 @@ export function GameOverTransition({ message, score, isWorldCup, worldCupTeams }
     </motion.div>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

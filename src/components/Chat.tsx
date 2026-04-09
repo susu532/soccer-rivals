@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { Send, MessageSquare } from 'lucide-react';
@@ -147,3 +156,8 @@ export function Chat({ socket }: { socket: Socket | null }) {
     </div>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

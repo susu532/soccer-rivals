@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { motion, AnimatePresence } from 'motion/react';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
 
@@ -97,3 +106,8 @@ export function GoalOverlay({ message, lastScorer, isWorldCup, worldCupTeams }: 
     </div>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

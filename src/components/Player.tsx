@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations, Html } from '@react-three/drei';
@@ -188,3 +197,8 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
 Object.values(CHARACTERS).forEach(config => {
   useGLTF.preload(config.url);
 });
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

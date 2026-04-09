@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { create } from 'zustand';
 
 export interface PlayerState {
@@ -154,3 +163,8 @@ export const useGameStore = create<StoreState>((set) => ({
       return { gameState: { ...state.gameState, players: newPlayers } };
     }),
 }));
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

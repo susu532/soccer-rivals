@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 class SoundManager {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -105,3 +114,8 @@ class SoundManager {
 }
 
 export const soundManager = new SoundManager();
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */

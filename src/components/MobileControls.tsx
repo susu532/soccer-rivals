@@ -1,3 +1,12 @@
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
 import { Joystick } from 'react-joystick-component';
 import { motion } from 'motion/react';
 import { Zap, ArrowUp } from 'lucide-react';
@@ -51,3 +60,8 @@ export function MobileControls({ onMove, onStop, onKick, onJump }: MobileControl
     </div>
   );
 }
+
+
+/**
+ * @copyright 2026 hentertrabelsi - All Rights Reserved
+ */
