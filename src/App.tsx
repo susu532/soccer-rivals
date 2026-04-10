@@ -21,7 +21,50 @@ import { SettingsModal } from './components/SettingsModal';
 import { MobileControls } from './components/MobileControls';
 import { useGameStore } from './store';
 import { soundManager } from './utils/audio';
-import { LogOut, X, Check, Trophy, Settings, Copy } from 'lucide-react';
+import { LogOut, X, Check, Trophy, Settings, Copy, AlertCircle } from 'lucide-react';
+import { WORLD_CUP_COUNTRIES } from './constants/countries';
+import { motion, AnimatePresence } from 'motion/react';
+
+export default function App() {
+  const socketRef = useRef<Socket | null>(null);
+  const setGameState = useGameStore((state) => state.setGameState);
+  const setMyId = useGameStore((state) => state.setMyId);
+  const gameState = useGameStore((state) => state.gameState);
+  const inLobby = useGameStore((state) => state.inLobby);
+  const setInLobby = useGameStore((state) => state.setInLobby);
+  const playerName = useGameStore((state) => state.playerName);
+  const selectedWorldCupCountry = useGameStore((state) => state.selectedWorldCupCountry);
+  const settings = useGameStore((state) => state.settings);
+
+  const roomId = useGameStore((state) => state.roomId);
+  const isPrivate = useGameStore((state) => state.isPrivate);
+
+  const [keys, setKeys] = useState({ w: false, a: false, s: false, d: false, jump: false, kick: false });
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+/**
+ * @copyright 2026 hentertrabelsi
+ * @contact Email: hentertrabelsi@gmail.com
+ * @discord #susuxo
+ * 
+ * All rights reserved. This software is proprietary and confidential.
+ * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software without explicit permission.
+ */
+
+import { useEffect, useState, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { Scene } from './components/Scene';
+import { Lobby } from './components/Lobby';
+import { Chat } from './components/Chat';
+import { MatchTransition } from './components/MatchTransition';
+import { GameOverTransition } from './components/GameOverTransition';
+import { GoalOverlay } from './components/GoalOverlay';
+import { Scoreboard } from './components/Scoreboard';
+import { SettingsModal } from './components/SettingsModal';
+import { MobileControls } from './components/MobileControls';
+import { useGameStore } from './store';
+import { soundManager } from './utils/audio';
+import { LogOut, X, Check, Trophy, Settings, Copy, AlertCircle } from 'lucide-react';
 import { WORLD_CUP_COUNTRIES } from './constants/countries';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -49,6 +92,7 @@ export default function App() {
   const [joystickInput, setJoystickInput] = useState({ x: 0, z: 0 });
   const prevMatchStateRef = useRef(gameState.matchState);
   const prevRoomIdRef = useRef(roomId);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Handle room transition animation
   useEffect(() => {
@@ -99,6 +143,13 @@ export default function App() {
   }, [gameState.matchState]);
 
   useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
     soundManager.init();
     soundManager.setVolume(useGameStore.getState().settings.volume);
@@ -146,7 +197,7 @@ export default function App() {
     });
 
     newSocket.on('error', (msg) => {
-      alert(msg);
+      setErrorMessage(msg);
       setInLobby(true);
     });
 
@@ -553,6 +604,39 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+
+        {/* Modern Error Notification */}
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -50, x: '-50%' }}
+            className="fixed top-8 left-1/2 z-[200] w-full max-w-sm"
+          >
+            <div className="mx-4 bg-gray-950/80 backdrop-blur-xl border border-red-500/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(239,68,68,0.2)] flex items-center gap-4">
+              <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
+                <AlertCircle size={20} className="text-red-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-white font-black italic uppercase text-xs tracking-wider mb-0.5">Room Error</h4>
+                <p className="text-white/60 text-sm font-medium truncate">{errorMessage}</p>
+              </div>
+              <button 
+                onClick={() => setErrorMessage(null)}
+                className="p-1.5 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {/* Progress bar for auto-dismiss */}
+            <motion.div 
+              initial={{ width: '100%' }}
+              animate={{ width: '0%' }}
+              transition={{ duration: 5, ease: 'linear' }}
+              className="absolute bottom-0 left-6 right-6 h-0.5 bg-red-500/30 rounded-full"
+            />
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
