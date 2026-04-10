@@ -56,6 +56,12 @@ export function Lobby() {
   const [showWorldCupModal, setShowWorldCupModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [roomCode, setRoomCode] = useState('');
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handlePlay = () => {
     setIsWorldCup(false);
@@ -89,6 +95,71 @@ export function Lobby() {
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-vibrant-purple via-vibrant-pink to-vibrant-orange overflow-hidden font-sans select-none">
+      {/* Splash Screen Transition */}
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-gray-950 overflow-hidden"
+          >
+            <motion.div 
+              className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-vibrant-cyan/20 via-gray-900 to-gray-950"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+            />
+            
+            <motion.div
+              initial={{ scale: 0.8, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
+              className="relative z-10 flex flex-col items-center gap-8"
+            >
+              <motion.div
+                initial={{ rotate: -180, scale: 0 }}
+                animate={{ rotate: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 150, damping: 15, delay: 0.3 }}
+              >
+                <img src="/logo.png" alt="Soccer Rivals Logo" className="w-40 h-40 md:w-56 md:h-56 drop-shadow-[0_0_40px_rgba(0,255,255,0.6)]" />
+              </motion.div>
+              
+              <motion.div className="flex flex-col items-center">
+                <motion.h1 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                  className="text-5xl md:text-8xl font-black italic tracking-tighter text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] text-center"
+                >
+                  SOCCER<span className="text-vibrant-yellow drop-shadow-[0_0_20px_rgba(255,255,0,0.6)]"> RIVALS 3D</span>
+                </motion.h1>
+                <motion.div
+                  initial={{ width: "0%" }}
+                  animate={{ width: "150%" }}
+                  transition={{ duration: 1.2, ease: "easeInOut", delay: 0.7 }}
+                  className="h-1 lg:h-2 mt-4 bg-gradient-to-r from-transparent via-vibrant-cyan to-transparent rounded-full shadow-[0_0_15px_rgba(0,255,255,0.8)]"
+                />
+              </motion.div>
+            </motion.div>
+
+            {/* Decorative particles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-50">
+              <motion.div 
+                animate={{ y: ["-10%", "110%"], x: ["-5%", "5%"] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="absolute top-0 left-[20%] w-1 h-32 bg-vibrant-pink/50 blur-md rounded-full transform -skew-x-[30deg]"
+              />
+              <motion.div 
+                animate={{ y: ["-10%", "110%"], x: ["5%", "-5%"] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "linear", delay: 0.5 }}
+                className="absolute top-0 right-[30%] w-2 h-40 bg-vibrant-cyan/50 blur-md rounded-full transform -skew-x-[30deg]"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Blobs for playfulness */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-vibrant-cyan/20 blur-[100px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-vibrant-yellow/20 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
