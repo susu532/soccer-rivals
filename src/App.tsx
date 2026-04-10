@@ -41,49 +41,6 @@ export default function App() {
 
   const [keys, setKeys] = useState({ w: false, a: false, s: false, d: false, jump: false, kick: false });
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-/**
- * @copyright 2026 hentertrabelsi
- * @contact Email: hentertrabelsi@gmail.com
- * @discord #susuxo
- * 
- * All rights reserved. This software is proprietary and confidential.
- * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software without explicit permission.
- */
-
-import { useEffect, useState, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { Scene } from './components/Scene';
-import { Lobby } from './components/Lobby';
-import { Chat } from './components/Chat';
-import { MatchTransition } from './components/MatchTransition';
-import { GameOverTransition } from './components/GameOverTransition';
-import { GoalOverlay } from './components/GoalOverlay';
-import { Scoreboard } from './components/Scoreboard';
-import { SettingsModal } from './components/SettingsModal';
-import { MobileControls } from './components/MobileControls';
-import { useGameStore } from './store';
-import { soundManager } from './utils/audio';
-import { LogOut, X, Check, Trophy, Settings, Copy, AlertCircle } from 'lucide-react';
-import { WORLD_CUP_COUNTRIES } from './constants/countries';
-import { motion, AnimatePresence } from 'motion/react';
-
-export default function App() {
-  const socketRef = useRef<Socket | null>(null);
-  const setGameState = useGameStore((state) => state.setGameState);
-  const setMyId = useGameStore((state) => state.setMyId);
-  const gameState = useGameStore((state) => state.gameState);
-  const inLobby = useGameStore((state) => state.inLobby);
-  const setInLobby = useGameStore((state) => state.setInLobby);
-  const playerName = useGameStore((state) => state.playerName);
-  const selectedWorldCupCountry = useGameStore((state) => state.selectedWorldCupCountry);
-  const settings = useGameStore((state) => state.settings);
-
-  const roomId = useGameStore((state) => state.roomId);
-  const isPrivate = useGameStore((state) => state.isPrivate);
-
-  const [keys, setKeys] = useState({ w: false, a: false, s: false, d: false, jump: false, kick: false });
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showMatchTransition, setShowMatchTransition] = useState(false);
   const [showScoreboard, setShowScoreboard] = useState(false);
