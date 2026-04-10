@@ -16,7 +16,7 @@ import { Settings, Play, Trophy, Snowflake, Info, Gamepad2, User, ChevronRight, 
 import { useGameStore } from '../store';
 import { SettingsModal } from './SettingsModal';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
-import { requestAd } from '../utils/crazygames';
+import { requestAd } from '../utils/poki';
 
 const MODEL_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
 
@@ -273,10 +273,12 @@ export function Lobby() {
         {/* Watch Ad for Coins Button */}
         <motion.button 
           onClick={async () => {
-            // First we show the rewarded ad, and if it finishes (doesn't throw) we give coins
+            // First we show the rewarded ad, and if it finishes successfully we give coins
             try {
-              await requestAd('rewarded');
-              addCoins(100);
+              const success = await requestAd('rewarded');
+              if (success) {
+                addCoins(100);
+              }
             } catch (err) {
               console.error("Failed to show rewarded ad", err);
             }

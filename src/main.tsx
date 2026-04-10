@@ -11,10 +11,10 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { initCrazyGames } from './utils/crazygames';
+import { initPoki } from './utils/poki';
 
-// Initialize the CrazyGames SDK
-initCrazyGames();
+// Initialize the Poki SDK
+initPoki();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

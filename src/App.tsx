@@ -24,7 +24,7 @@ import { soundManager } from './utils/audio';
 import { Trophy, Settings, Copy, AlertCircle, LogOut, X, Check } from 'lucide-react';
 import { WORLD_CUP_COUNTRIES } from './constants/countries';
 import { motion, AnimatePresence } from 'motion/react';
-import { triggerHappyMoment, requestAd } from './utils/crazygames';
+import { triggerHappyMoment, requestAd } from './utils/poki';
 
 export default function App() {
   const socketRef = useRef<Socket | null>(null);
