@@ -11,6 +11,10 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { initCrazyGames } from './utils/crazygames';
+
+// Initialize the CrazyGames SDK
+initCrazyGames();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

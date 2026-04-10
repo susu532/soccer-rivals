@@ -21,9 +21,10 @@ import { SettingsModal } from './components/SettingsModal';
 import { MobileControls } from './components/MobileControls';
 import { useGameStore } from './store';
 import { soundManager } from './utils/audio';
-import { LogOut, X, Check, Trophy, Settings, Copy, AlertCircle } from 'lucide-react';
+import { Trophy, Settings, Copy, AlertCircle, LogOut, X, Check } from 'lucide-react';
 import { WORLD_CUP_COUNTRIES } from './constants/countries';
 import { motion, AnimatePresence } from 'motion/react';
+import { triggerHappyMoment, requestAd } from './utils/crazygames';
 
 export default function App() {
   const socketRef = useRef<Socket | null>(null);
@@ -91,9 +92,15 @@ export default function App() {
         soundManager.playWhistle();
       } else if (gameState.matchState === 'goal') {
         soundManager.playGoal();
+        triggerHappyMoment();
       } else if (gameState.matchState === 'gameover') {
         soundManager.playWhistle();
         setTimeout(() => soundManager.playWhistle(), 400); // Double whistle for game over
+        
+        // Mid-roll ad on game over
+        setTimeout(() => {
+          requestAd('midgame');
+        }, 1500); // Delay ad slightly so player sees the game over screen
       }
       prevMatchStateRef.current = gameState.matchState;
     }

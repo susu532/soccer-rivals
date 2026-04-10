@@ -91,6 +91,7 @@ interface StoreState {
   setSettings: (settings: Partial<StoreState['settings']>) => void;
   updatePlayer: (id: string, player: PlayerState) => void;
   removePlayer: (id: string) => void;
+  addCoins: (amount: number) => void;
 }
 
 export const useGameStore = create<StoreState>((set) => ({
@@ -162,6 +163,7 @@ export const useGameStore = create<StoreState>((set) => ({
       delete newPlayers[id];
       return { gameState: { ...state.gameState, players: newPlayers } };
     }),
+  addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
 }));
 
 

@@ -16,6 +16,7 @@ import { Settings, Play, Trophy, Snowflake, Info, Gamepad2, User, ChevronRight, 
 import { useGameStore } from '../store';
 import { SettingsModal } from './SettingsModal';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
+import { requestAd } from '../utils/crazygames';
 
 const MODEL_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
 
@@ -51,6 +52,9 @@ export function Lobby() {
   const selectedWorldCupCountry = useGameStore((state) => state.selectedWorldCupCountry);
   const setSelectedWorldCupCountry = useGameStore((state) => state.setSelectedWorldCupCountry);
   const setIsWorldCup = useGameStore((state) => state.setIsWorldCup);
+  const coins = useGameStore((state) => state.coins);
+  const addCoins = useGameStore((state) => state.addCoins);
+  
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showModesModal, setShowModesModal] = useState(false);
   const [showWorldCupModal, setShowWorldCupModal] = useState(false);
@@ -223,7 +227,7 @@ export function Lobby() {
       </div>
 
       {/* Top Right: Profile */}
-      <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 md:gap-3 z-50">
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 flex flex-col items-end gap-2 md:gap-3 z-50">
         <div className="flex items-center gap-2 md:gap-3 bg-black/60 backdrop-blur-xl p-1 md:p-2 pr-2.5 md:pr-4 rounded-lg md:rounded-2xl border border-white/10 shadow-xl group">
           <div className="relative">
             <div className="w-7 h-7 md:w-10 md:h-10 bg-gradient-to-br from-vibrant-cyan to-vibrant-purple rounded-lg md:rounded-xl flex items-center justify-center text-black shadow-[0_0_15px_rgba(0,255,255,0.2)] transform group-hover:rotate-3 transition-transform overflow-hidden">
@@ -265,6 +269,26 @@ export function Lobby() {
             </div>
           </div>
         </div>
+
+        {/* Watch Ad for Coins Button */}
+        <motion.button 
+          onClick={async () => {
+            // First we show the rewarded ad, and if it finishes (doesn't throw) we give coins
+            try {
+              await requestAd('rewarded');
+              addCoins(100);
+            } catch (err) {
+              console.error("Failed to show rewarded ad", err);
+            }
+          }}
+          whileHover={{ scale: 1.05 }}
+          className="bg-vibrant-yellow/10 hover:bg-vibrant-yellow/30 text-vibrant-yellow border border-vibrant-yellow/20 font-black italic uppercase text-[10px] md:text-xs py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 backdrop-blur-md transition-all shadow-lg self-end"
+        >
+          <div className="bg-vibrant-yellow text-black rounded-full px-1.5 py-0.5 text-[8px] md:text-[10px]">
+            {coins} 🪙
+          </div>
+          Watch Ad = +100
+        </motion.button>
       </div>
 
   <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
