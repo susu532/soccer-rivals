@@ -164,30 +164,6 @@ export function Field() {
         </mesh>
       </group>
 
-      {/* Invisible Curved Corners (Rocket League style collision match) */}
-      <group>
-        {/* Top Left */}
-        <mesh position={[-fieldWidth / 2 + 4, 2, -fieldLength / 2 + 4]} rotation={[0, Math.PI, 0]}>
-          <cylinderGeometry args={[4, 4, 4, 16, 1, false, 0, Math.PI / 2]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-        {/* Top Right */}
-        <mesh position={[fieldWidth / 2 - 4, 2, -fieldLength / 2 + 4]} rotation={[0, -Math.PI / 2, 0]}>
-          <cylinderGeometry args={[4, 4, 4, 16, 1, false, 0, Math.PI / 2]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-        {/* Bottom Right */}
-        <mesh position={[fieldWidth / 2 - 4, 2, fieldLength / 2 - 4]} rotation={[0, 0, 0]}>
-          <cylinderGeometry args={[4, 4, 4, 16, 1, false, 0, Math.PI / 2]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-        {/* Bottom Left */}
-        <mesh position={[-fieldWidth / 2 + 4, 2, fieldLength / 2 - 4]} rotation={[0, Math.PI / 2, 0]}>
-          <cylinderGeometry args={[4, 4, 4, 16, 1, false, 0, Math.PI / 2]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-      </group>
-
       {/* Goals */}
       {/* Blue Team Goal (North) */}
       <group position={[0, 0, -fieldLength / 2]}>
