@@ -272,7 +272,7 @@ const physicsLoopReplacement = `    for (const room of rooms.values()) {
               delete room.gameState.lastScorer;
               room.resetPositions();
             } else {
-              room.gameState.message = \`Waiting for players... \${10 - Math.floor(room.waitingTicks / TICK_RATE)}s until bots join\`;
+              room.gameState.message = \`Waiting for players...\`;
             }
           } else {
             room.waitingTicks = 0;
