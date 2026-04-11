@@ -7,40 +7,87 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useMemo, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, useAnimations, Environment, Float, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, Play, Trophy, Snowflake, Info, Gamepad2, User, ChevronRight, X, Edit2, Globe } from 'lucide-react';
+import { Settings, Play, Trophy, Snowflake, Info, Gamepad2, User, ChevronRight, X, Edit2, Globe, Palette, Lock, Tv, Loader2 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { SettingsModal } from './SettingsModal';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
-import { requestAd } from '../utils/poki';
-
-const MODEL_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
+import { CHARACTERS } from './Player';
 
 function PlayerPreview() {
+  const selectedCharacter = useGameStore((state) => state.selectedCharacter);
+  const characterConfig = CHARACTERS[selectedCharacter] || CHARACTERS['robot'];
   const group = useRef<THREE.Group>(null);
-  const { scene, animations } = useGLTF(MODEL_URL);
-  const { actions } = useAnimations(animations, group);
+  const { scene, animations } = useGLTF(characterConfig.url);
+  
+  const clonedScene = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const clonedSceneRef = useMemo(() => ({ current: clonedScene }), [clonedScene]);
+  const { actions } = useAnimations(animations, clonedSceneRef);
 
   useEffect(() => {
-    if (actions['Idle']) {
-      actions['Idle'].play();
+    const idleAnim = characterConfig.animations.idle;
+    if (actions[idleAnim]) {
+      actions[idleAnim].play();
+      return () => {
+        actions[idleAnim].fadeOut(0.5);
+      };
     }
-  }, [actions]);
+  }, [actions, characterConfig]);
 
   return (
     <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
       <primitive 
         ref={group} 
-        object={scene} 
-        scale={window.innerWidth < 768 ? 0.45 : 0.6} 
+        object={clonedScene} 
+        scale={(window.innerWidth < 768 ? 0.45 : 0.6) * (characterConfig.scale / CHARACTERS['robot'].scale)} 
         position={[0, window.innerWidth < 768 ? -1.2 : -1.5, 0]} 
-        rotation={[0, -Math.PI / 4, 0]} 
+        rotation={[
+          characterConfig.rotationOffset[0],
+          characterConfig.rotationOffset[1] - Math.PI / 4,
+          characterConfig.rotationOffset[2]
+        ]} 
       />
     </Float>
+  );
+}
+
+function CharacterModel({ charKey }: { charKey: string }) {
+  const characterConfig = CHARACTERS[charKey];
+  const { scene } = useGLTF(characterConfig.url);
+  const clonedScene = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+
+  // Adjust Y position to center characters better in the icon squares
+  const yPos = charKey === 'fox' ? -0.4 : -1.5;
+
+  return (
+    <primitive 
+      object={clonedScene} 
+      scale={characterConfig.scale * 1.2} 
+      position={[0, yPos, 0]} 
+      rotation={[
+        characterConfig.rotationOffset[0],
+        characterConfig.rotationOffset[1] - Math.PI / 6,
+        characterConfig.rotationOffset[2]
+      ]} 
+    />
+  );
+}
+
+function CharacterIconPreview({ charKey }: { charKey: string }) {
+  return (
+    <div className="w-full h-full">
+      <Canvas camera={{ position: [0, 0, 2.5], fov: 35 }} gl={{ antialias: true }}>
+        <ambientLight intensity={1.5} />
+        <pointLight position={[5, 5, 5]} intensity={2} />
+        <Environment preset="city" />
+        <CharacterModel charKey={charKey} />
+      </Canvas>
+    </div>
   );
 }
 
@@ -52,15 +99,18 @@ export function Lobby() {
   const selectedWorldCupCountry = useGameStore((state) => state.selectedWorldCupCountry);
   const setSelectedWorldCupCountry = useGameStore((state) => state.setSelectedWorldCupCountry);
   const setIsWorldCup = useGameStore((state) => state.setIsWorldCup);
-  const coins = useGameStore((state) => state.coins);
-  const addCoins = useGameStore((state) => state.addCoins);
-  
+  const selectedCharacter = useGameStore((state) => state.selectedCharacter);
+  const setSelectedCharacter = useGameStore((state) => state.setSelectedCharacter);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showModesModal, setShowModesModal] = useState(false);
   const [showWorldCupModal, setShowWorldCupModal] = useState(false);
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [roomCode, setRoomCode] = useState('');
   const [showSplash, setShowSplash] = useState(true);
+  const unlockedCharacters = useGameStore((state) => state.unlockedCharacters);
+  const unlockCharacter = useGameStore((state) => state.unlockCharacter);
+  const [isWatchingAd, setIsWatchingAd] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2000);
@@ -180,7 +230,7 @@ export function Lobby() {
       
       {/* Top Left: Settings & Region */}
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-50 flex gap-2">
-        {!showJoinModal && !showSettings && (
+        {!showJoinModal && !showSettings && !showCustomizeModal && (
           <>
             <motion.button 
               initial={{ opacity: 0, scale: 0.8 }}
@@ -227,88 +277,70 @@ export function Lobby() {
       </div>
 
       {/* Top Right: Profile */}
-      <div className="absolute top-4 right-4 md:top-6 md:right-6 flex flex-col items-end gap-2 md:gap-3 z-50">
-        <div className="flex items-center gap-2 md:gap-3 bg-black/60 backdrop-blur-xl p-1 md:p-2 pr-2.5 md:pr-4 rounded-lg md:rounded-2xl border border-white/10 shadow-xl group">
-          <div className="relative">
-            <div className="w-7 h-7 md:w-10 md:h-10 bg-gradient-to-br from-vibrant-cyan to-vibrant-purple rounded-lg md:rounded-xl flex items-center justify-center text-black shadow-[0_0_15px_rgba(0,255,255,0.2)] transform group-hover:rotate-3 transition-transform overflow-hidden">
-              {selectedWorldCupCountry ? (
-                <img 
-                  src={WORLD_CUP_COUNTRIES.find(c => c.name === selectedWorldCupCountry)?.flag} 
-                  alt={selectedWorldCupCountry}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <User size={14} className="md:w-5 md:h-5" />
-              )}
-            </div>
-            <div className="absolute -bottom-1 -right-1 bg-vibrant-yellow text-[6px] md:text-[8px] font-black text-black px-1 md:px-1.5 py-0.5 rounded-full border border-black shadow-md">
-              L1
-            </div>
-          </div>
-          
-          <div className="flex flex-col min-w-[60px] md:min-w-[120px]">
-            <div className="flex items-center gap-1 group/input relative">
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                className="text-white font-black text-[10px] md:text-sm leading-tight bg-transparent border-b border-transparent focus:border-vibrant-cyan focus:outline-none transition-all w-full placeholder:text-white/20 italic uppercase tracking-tight cursor-pointer pr-3 md:pr-4"
-                placeholder="Name"
-                maxLength={16}
-              />
-              <Edit2 size={8} className="md:w-2.5 md:h-2.5 absolute right-0 text-white/20 group-hover/input:text-vibrant-cyan transition-colors pointer-events-none" />
+      {!showCustomizeModal && (
+        <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 md:gap-3 z-50">
+          <div className="flex items-center gap-2 md:gap-3 bg-black/60 backdrop-blur-xl p-1 md:p-2 pr-2.5 md:pr-4 rounded-lg md:rounded-2xl border border-white/10 shadow-xl group">
+            <div className="relative">
+              <div className="w-7 h-7 md:w-10 md:h-10 bg-gradient-to-br from-vibrant-cyan to-vibrant-purple rounded-lg md:rounded-xl flex items-center justify-center text-black shadow-[0_0_15px_rgba(0,255,255,0.2)] transform group-hover:rotate-3 transition-transform overflow-hidden">
+                {selectedWorldCupCountry ? (
+                  <img 
+                    src={WORLD_CUP_COUNTRIES.find(c => c.name === selectedWorldCupCountry)?.flag} 
+                    alt={selectedWorldCupCountry}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <User size={14} className="md:w-5 md:h-5" />
+                )}
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-vibrant-yellow text-[6px] md:text-[8px] font-black text-black px-1 md:px-1.5 py-0.5 rounded-full border border-black shadow-md">
+                L1
+              </div>
             </div>
             
-            <div className="w-full h-0.5 md:h-1 bg-white/5 rounded-full overflow-hidden mt-0.5 md:mt-1">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: '15%' }}
-                className="h-full bg-gradient-to-r from-vibrant-cyan to-vibrant-purple"
-              />
+            <div className="flex flex-col min-w-[60px] md:min-w-[120px]">
+              <div className="flex items-center gap-1 group/input relative">
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  className="text-white font-black text-[10px] md:text-sm leading-tight bg-transparent border-b border-transparent focus:border-vibrant-cyan focus:outline-none transition-all w-full placeholder:text-white/20 italic uppercase tracking-tight cursor-pointer pr-3 md:pr-4"
+                  placeholder="Name"
+                  maxLength={16}
+                />
+                <Edit2 size={8} className="md:w-2.5 md:h-2.5 absolute right-0 text-white/20 group-hover/input:text-vibrant-cyan transition-colors pointer-events-none" />
+              </div>
+              
+              <div className="w-full h-0.5 md:h-1 bg-white/5 rounded-full overflow-hidden mt-0.5 md:mt-1">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: '15%' }}
+                  className="h-full bg-gradient-to-r from-vibrant-cyan to-vibrant-purple"
+                />
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Watch Ad for Coins Button */}
-        <motion.button 
-          onClick={async () => {
-            // First we show the rewarded ad, and if it finishes successfully we give coins
-            try {
-              const success = await requestAd('rewarded');
-              if (success) {
-                addCoins(100);
-              }
-            } catch (err) {
-              console.error("Failed to show rewarded ad", err);
-            }
-          }}
-          whileHover={{ scale: 1.05 }}
-          className="bg-vibrant-yellow/10 hover:bg-vibrant-yellow/30 text-vibrant-yellow border border-vibrant-yellow/20 font-black italic uppercase text-[10px] md:text-xs py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 backdrop-blur-md transition-all shadow-lg self-end"
-        >
-          <div className="bg-vibrant-yellow text-black rounded-full px-1.5 py-0.5 text-[8px] md:text-[10px]">
-            {coins} 🪙
-          </div>
-          Watch Ad = +100
-        </motion.button>
-      </div>
+      )}
 
   <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
       {/* Center: Title */}
-      <div className="absolute top-16 md:top-16 left-1/2 -translate-x-1/2 text-center w-full px-4 z-10">
-        <motion.h1 
-          initial={{ y: -50, opacity: 0, scale: 0.8 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-          className="text-4xl sm:text-6xl md:text-9xl font-black italic tracking-tighter text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] whitespace-nowrap flex flex-col md:block"
-        >
-          SOCCER <span className="text-vibrant-yellow drop-shadow-[0_0_15px_rgba(255,255,0,0.5)]">RIVALS 3D</span>
-        </motion.h1>
-      </div>
+      {!showCustomizeModal && (
+        <div className="absolute top-16 md:top-16 left-1/2 -translate-x-1/2 text-center w-full px-4 z-10">
+          <motion.h1 
+            initial={{ y: -50, opacity: 0, scale: 0.8 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+            className="text-4xl sm:text-6xl md:text-9xl font-black italic tracking-tighter text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] whitespace-nowrap flex flex-col md:block"
+          >
+            SOCCER <span className="text-vibrant-yellow drop-shadow-[0_0_15px_rgba(255,255,0,0.5)]">RIVALS 3D</span>
+          </motion.h1>
+        </div>
+      )}
 
       {/* Center: 3D Preview */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-0 transition-all duration-500 ${showCustomizeModal ? 'w-full h-[40%] md:h-full md:w-1/2' : 'w-full h-full'}`}>
         <div className="w-full h-full max-w-2xl max-h-[400px] md:max-h-[600px] -translate-y-10 md:translate-y-0">
           <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
             <ambientLight intensity={0.7} />
@@ -323,109 +355,114 @@ export function Lobby() {
       </div>
 
       {/* Left Side: Buttons & News */}
-      <div className="absolute left-4 md:left-10 top-[50%] md:top-1/2 -translate-y-1/2 flex flex-col gap-3 md:gap-4 w-[calc(100%-2rem)] md:w-64 z-20">
-        <div className="flex flex-row md:flex-col gap-2 md:gap-4">
-          <motion.button 
-            whileHover={{ x: 10, scale: 1.05 }}
-            className="flex-1 bg-vibrant-orange hover:bg-vibrant-orange/90 text-white font-black text-[10px] sm:text-sm md:text-xl py-3 md:py-4 px-3 md:px-6 rounded-xl md:rounded-2xl flex items-center justify-center md:justify-start gap-1.5 md:gap-3 shadow-[0_4px_0_#c2410c] md:shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic"
-          >
-            <Settings size={16} className="md:w-6 md:h-6" />
-            <span className="hidden sm:inline">Customize</span>
-            <span className="sm:hidden">Skins</span>
-          </motion.button>
-          
-          <motion.button 
-            whileHover={{ x: 10, scale: 1.05 }}
-            onClick={() => setShowModesModal(true)}
-            className="flex-1 bg-vibrant-cyan hover:bg-vibrant-cyan/90 text-black font-black text-[10px] sm:text-sm md:text-xl py-3 md:py-4 px-3 md:px-6 rounded-xl md:rounded-2xl flex items-center justify-center md:justify-start gap-1.5 md:gap-3 shadow-[0_4px_0_#0891b2] md:shadow-[0_8px_0_#0891b2] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic"
-          >
-            <Gamepad2 size={16} className="md:w-6 md:h-6" />
-            Modes
-          </motion.button>
-
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            className="md:hidden bg-black/40 backdrop-blur-md text-vibrant-cyan p-3 rounded-xl border border-white/10 flex items-center justify-center shadow-xl"
-          >
-            <Info size={18} />
-          </motion.button>
-        </div>
-
-        <div className="hidden md:block bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4 shadow-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-vibrant-cyan font-black italic text-lg uppercase">News</h3>
-            <div className="bg-vibrant-cyan p-0.5 rounded text-black">
-              <Info size={14} />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <div 
-              onClick={() => setShowWorldCupModal(true)}
-              className="bg-gradient-to-r from-vibrant-yellow/10 to-vibrant-orange/10 hover:from-vibrant-yellow/20 hover:to-vibrant-orange/20 p-3 rounded-xl flex items-center gap-3 transition-colors cursor-pointer group border border-vibrant-yellow/20"
+      {!showCustomizeModal && (
+        <div className="absolute left-4 md:left-10 top-[50%] md:top-1/2 -translate-y-1/2 flex flex-col gap-3 md:gap-4 w-[calc(100%-2rem)] md:w-64 z-20">
+          <div className="flex flex-row md:flex-col gap-2 md:gap-4">
+            <motion.button 
+              whileHover={{ x: 10, scale: 1.05 }}
+              onClick={() => setShowCustomizeModal(true)}
+              className="flex-1 bg-vibrant-orange hover:bg-vibrant-orange/90 text-white font-black text-[10px] sm:text-sm md:text-xl py-3 md:py-4 px-3 md:px-6 rounded-xl md:rounded-2xl flex items-center justify-center md:justify-start gap-1.5 md:gap-3 shadow-[0_4px_0_#c2410c] md:shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic"
             >
-              <Globe size={18} className="text-vibrant-yellow" />
-              <div className="flex flex-col flex-1">
-                <span className="text-white/80 text-sm font-black uppercase italic">World Cup 2026</span>
-                <span className="text-[10px] text-vibrant-cyan font-bold uppercase">Tournament Live!</span>
+              <Settings size={16} className="md:w-6 md:h-6" />
+              <span className="hidden sm:inline">Customize</span>
+              <span className="sm:hidden">Skins</span>
+            </motion.button>
+            
+            <motion.button 
+              whileHover={{ x: 10, scale: 1.05 }}
+              onClick={() => setShowModesModal(true)}
+              className="flex-1 bg-vibrant-cyan hover:bg-vibrant-cyan/90 text-black font-black text-[10px] sm:text-sm md:text-xl py-3 md:py-4 px-3 md:px-6 rounded-xl md:rounded-2xl flex items-center justify-center md:justify-start gap-1.5 md:gap-3 shadow-[0_4px_0_#0891b2] md:shadow-[0_8px_0_#0891b2] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic"
+            >
+              <Gamepad2 size={16} className="md:w-6 md:h-6" />
+              Modes
+            </motion.button>
+
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              className="md:hidden bg-black/40 backdrop-blur-md text-vibrant-cyan p-3 rounded-xl border border-white/10 flex items-center justify-center shadow-xl"
+            >
+              <Info size={18} />
+            </motion.button>
+          </div>
+
+          <div className="hidden md:block bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-vibrant-cyan font-black italic text-lg uppercase">News</h3>
+              <div className="bg-vibrant-cyan p-0.5 rounded text-black">
+                <Info size={14} />
               </div>
-              <ChevronRight size={14} className="text-white/20 group-hover:text-white/60" />
             </div>
-            <div className="bg-white/5 hover:bg-white/10 p-3 rounded-xl flex items-center gap-3 transition-colors cursor-pointer group">
-              <Trophy size={18} className="text-vibrant-yellow" />
-              <span className="text-white/80 text-sm font-medium flex-1">Season 1: Kickoff!</span>
-              <ChevronRight size={14} className="text-white/20 group-hover:text-white/60" />
+            <div className="flex flex-col gap-2">
+              <div 
+                onClick={() => setShowWorldCupModal(true)}
+                className="bg-gradient-to-r from-vibrant-yellow/10 to-vibrant-orange/10 hover:from-vibrant-yellow/20 hover:to-vibrant-orange/20 p-3 rounded-xl flex items-center gap-3 transition-colors cursor-pointer group border border-vibrant-yellow/20"
+              >
+                <Globe size={18} className="text-vibrant-yellow" />
+                <div className="flex flex-col flex-1">
+                  <span className="text-white/80 text-sm font-black uppercase italic">World Cup 2026</span>
+                  <span className="text-[10px] text-vibrant-cyan font-bold uppercase">Tournament Live!</span>
+                </div>
+                <ChevronRight size={14} className="text-white/20 group-hover:text-white/60" />
+              </div>
+              <div className="bg-white/5 hover:bg-white/10 p-3 rounded-xl flex items-center gap-3 transition-colors cursor-pointer group">
+                <Trophy size={18} className="text-vibrant-yellow" />
+                <span className="text-white/80 text-sm font-medium flex-1">Season 1: Kickoff!</span>
+                <ChevronRight size={14} className="text-white/20 group-hover:text-white/60" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Right Side: Live Arenas */}
     
 
       {/* Bottom: Play Buttons */}
-      <div className="absolute bottom-6 md:bottom-12 left-0 w-full flex flex-col items-center gap-3 md:gap-6 z-30">
-        <div className="flex items-center justify-center w-full relative px-4">
-          <motion.button 
-            onClick={handlePlay}
-            whileHover={{ scale: 1.1, rotate: [-1, 1, -1] }}
-            whileTap={{ scale: 0.9 }}
-            className="bg-vibrant-yellow hover:bg-vibrant-yellow/90 text-black font-black text-3xl sm:text-3xl md:text-6xl py-4 md:py-6 px-6 md:px-16 rounded-2xl md:rounded-[3rem] flex items-center justify-center gap-2 md:gap-4 shadow-[0_6px_0_#a16207] md:shadow-[0_12px_0_#a16207] active:shadow-none active:translate-y-2 transition-all cursor-pointer uppercase italic z-10"
-          >
-            <Play size={28} className="md:w-14 md:h-14" fill="black" />
-            Play
-          </motion.button>
-
-          <div className="absolute left-[calc(50%+80px)] sm:left-[calc(50%+100px)] md:left-[calc(50%+180px)]">
+      {!showCustomizeModal && (
+        <div className="absolute bottom-6 md:bottom-12 left-0 w-full flex flex-col items-center gap-3 md:gap-6 z-30">
+          <div className="flex items-center justify-center w-full relative px-4">
             <motion.button 
-              onClick={() => setShowWorldCupModal(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-vibrant-yellow to-vibrant-orange text-black font-black text-[8px] md:text-sm py-1.5 md:py-3 px-2 md:px-6 rounded-lg md:rounded-2xl flex items-center justify-center gap-1 md:gap-2 shadow-[0_3px_0_#a16207] md:shadow-[0_4px_0_#a16207] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic whitespace-nowrap"
+              onClick={handlePlay}
+              whileHover={{ scale: 1.1, rotate: [-1, 1, -1] }}
+              whileTap={{ scale: 0.9 }}
+              className="bg-vibrant-yellow hover:bg-vibrant-yellow/90 text-black font-black text-3xl sm:text-3xl md:text-6xl py-4 md:py-6 px-6 md:px-16 rounded-2xl md:rounded-[3rem] flex items-center justify-center gap-2 md:gap-4 shadow-[0_6px_0_#a16207] md:shadow-[0_12px_0_#a16207] active:shadow-none active:translate-y-2 transition-all cursor-pointer uppercase italic z-10"
             >
-              <Globe size={12} className="md:w-5 md:h-5" />
-              World Cup 2026
+              <Play size={28} className="md:w-14 md:h-14" fill="black" />
+              Play
+            </motion.button>
+
+            <div className="absolute left-[calc(50%+80px)] sm:left-[calc(50%+100px)] md:left-[calc(50%+180px)]">
+              <motion.button 
+                onClick={() => setShowWorldCupModal(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-r from-vibrant-yellow to-vibrant-orange text-black font-black text-[8px] md:text-sm py-1.5 md:py-3 px-2 md:px-6 rounded-lg md:rounded-2xl flex items-center justify-center gap-1 md:gap-2 shadow-[0_3px_0_#a16207] md:shadow-[0_4px_0_#a16207] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic whitespace-nowrap"
+              >
+                <Globe size={12} className="md:w-5 md:h-5" />
+                World Cup 2026
+              </motion.button>
+            </div>
+          </div>
+
+          <div className="flex gap-2 md:gap-4 w-full md:w-auto">
+          
+            <motion.button 
+              onClick={handleCreate}
+              whileHover={{ scale: 1.05 }}
+              className="flex-1 md:flex-none bg-vibrant-cyan hover:bg-vibrant-cyan/90 text-black font-black py-3 md:py-3 px-4 md:px-8 rounded-xl md:rounded-xl shadow-[0_4px_0_#0891b2] md:shadow-[0_6px_0_#0891b2] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic text-xs md:text-base"
+            >
+              Create
+            </motion.button>
+            <motion.button 
+              onClick={() => setShowJoinModal(true)}
+              whileHover={{ scale: 1.05 }}
+              className="flex-1 md:flex-none bg-vibrant-purple hover:bg-vibrant-purple/90 text-white font-black py-3 md:py-3 px-4 md:px-8 rounded-xl md:rounded-xl shadow-[0_4px_0_#6b21a8] md:shadow-[0_6px_0_#6b21a8] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic text-xs md:text-base"
+            >
+              Join Private
             </motion.button>
           </div>
         </div>
-
-        <div className="flex gap-2 md:gap-4 w-full md:w-auto">
-        
-          <motion.button 
-            onClick={handleCreate}
-            whileHover={{ scale: 1.05 }}
-            className="flex-1 md:flex-none bg-vibrant-cyan hover:bg-vibrant-cyan/90 text-black font-black py-3 md:py-3 px-4 md:px-8 rounded-xl md:rounded-xl shadow-[0_4px_0_#0891b2] md:shadow-[0_6px_0_#0891b2] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic text-xs md:text-base"
-          >
-            Create
-          </motion.button>
-          <motion.button 
-            onClick={() => setShowJoinModal(true)}
-            whileHover={{ scale: 1.05 }}
-            className="flex-1 md:flex-none bg-vibrant-purple hover:bg-vibrant-purple/90 text-white font-black py-3 md:py-3 px-4 md:px-8 rounded-xl md:rounded-xl shadow-[0_4px_0_#6b21a8] md:shadow-[0_6px_0_#6b21a8] active:shadow-none active:translate-y-1 transition-all cursor-pointer uppercase italic text-xs md:text-base"
-          >
-            Join Private
-          </motion.button>
-        </div>
-      </div>
+      )}
 
      
 
@@ -650,6 +687,136 @@ export function Lobby() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Customize Full Page Overlay */}
+      <AnimatePresence>
+        {showCustomizeModal && (
+          <motion.div 
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="absolute bottom-0 md:top-0 right-0 w-full h-[65%] md:h-full md:w-1/2 bg-black/80 backdrop-blur-xl border-t md:border-t-0 md:border-l border-white/10 z-50 flex flex-col p-6 md:p-12 rounded-t-[2rem] md:rounded-none"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-3xl md:text-5xl font-black italic text-white uppercase leading-none">Customize</h3>
+                <p className="text-vibrant-orange text-xs md:text-sm font-bold uppercase tracking-widest mt-2">Select your character</p>
+              </div>
+              <button 
+                onClick={() => setShowCustomizeModal(false)}
+                className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors border border-white/10"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-4 md:gap-6">
+                {Object.keys(CHARACTERS).map((charKey) => {
+                  const isUnlocked = unlockedCharacters.includes(charKey);
+                  return (
+                    <button
+                      key={charKey}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          setSelectedCharacter(charKey as 'robot' | 'soldier' | 'fox');
+                        } else {
+                          setIsWatchingAd(charKey);
+                          setTimeout(() => {
+                            unlockCharacter(charKey);
+                            setSelectedCharacter(charKey as 'robot' | 'soldier' | 'fox');
+                            setIsWatchingAd(null);
+                          }, 3000);
+                        }
+                      }}
+                      className={`p-6 md:p-8 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group relative overflow-hidden ${
+                        selectedCharacter === charKey
+                          ? 'border-vibrant-orange bg-vibrant-orange/10'
+                          : 'border-white/5 bg-white/5 hover:border-white/20'
+                      } ${!isUnlocked ? 'grayscale-[0.8] opacity-80' : ''}`}
+                    >
+                      <div className="w-24 h-24 md:w-32 md:h-32 bg-black/40 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform overflow-hidden relative">
+                        <Suspense fallback={<User size={48} className="text-white/10 animate-pulse" />}>
+                          <CharacterIconPreview charKey={charKey} />
+                        </Suspense>
+                        
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 z-10">
+                            <div className="bg-vibrant-yellow p-2 rounded-full text-black shadow-[0_0_15px_rgba(255,255,0,0.5)]">
+                              <Tv size={20} />
+                            </div>
+                            <span className="text-[8px] font-black uppercase italic text-vibrant-yellow">Watch Ad</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-lg md:text-xl font-black uppercase italic text-center ${
+                          selectedCharacter === charKey ? 'text-white' : 'text-white/40'
+                        }`}>
+                          {charKey}
+                        </span>
+                        {!isUnlocked && <Lock size={14} className="text-white/20" />}
+                      </div>
+                      {selectedCharacter === charKey && (
+                        <motion.div 
+                          layoutId="selected-character-glow"
+                          className="absolute inset-0 bg-vibrant-orange/5 pointer-events-none"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <button 
+                onClick={() => setShowCustomizeModal(false)}
+                className="w-full bg-vibrant-orange hover:bg-vibrant-orange/90 text-white font-black italic uppercase py-5 md:py-6 text-lg md:text-xl rounded-2xl shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-2 transition-all cursor-pointer flex items-center justify-center gap-3"
+              >
+                <Palette size={24} />
+                Confirm Selection
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Ad Simulation Overlay */}
+      <AnimatePresence>
+        {isWatchingAd && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-6 text-center"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="mb-8 text-vibrant-cyan"
+            >
+              <Loader2 size={64} />
+            </motion.div>
+            <h2 className="text-4xl font-black italic text-white uppercase mb-2">Watching Ad...</h2>
+            <p className="text-white/40 font-bold uppercase tracking-widest text-sm italic">Unlocking {isWatchingAd} character</p>
+            
+            <div className="mt-12 w-64 h-2 bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 3, ease: "linear" }}
+                className="h-full bg-vibrant-cyan"
+              />
+            </div>
+            
+            <p className="mt-4 text-[10px] text-white/20 uppercase font-black tracking-tighter italic">
+              Placeholder for future ad implementation
+            </p>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
