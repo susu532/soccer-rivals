@@ -1,4 +1,4 @@
-# Soccer Rivals 3D - Anti-Scraping Policy
+# Soccer Rivals 3D - Anti-Scraping Policya
 # Copyright 2026 hentertrabelsi - All Rights Reserved
 
 User-agent: *
