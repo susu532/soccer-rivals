@@ -810,7 +810,7 @@ export function Lobby() {
                                 <div className="bg-vibrant-yellow p-2 rounded-full text-black shadow-[0_0_15px_rgba(255,255,0,0.5)]">
                                   <Coins size={20} />
                                 </div>
-                                <span className={`text-[16px] font-black uppercase italic ${coins >= 2200 ? 'text-vibrant-yellow' : 'text-red-500'}`}>2200 Coins</span>
+                                <span className={`text-[24px] font-black uppercase italic ${coins >= 2200 ? 'text-vibrant-yellow' : 'text-red-1000'}`}>2200 Coins</span>
                               </>
                             ) : (
                               <>
