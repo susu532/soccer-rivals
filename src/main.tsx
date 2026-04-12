@@ -11,10 +11,6 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { initPoki } from './utils/poki';
-
-// Initialize the Poki SDK
-initPoki();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

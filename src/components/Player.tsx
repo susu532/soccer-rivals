@@ -7,39 +7,67 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 import { PlayerState } from '../store';
 import { soundManager } from '../utils/audio';
 
-export const CHARACTERS: Record<string, { url: string; scale: number; yOffset: number; animations: { idle: string; run: string; jump: string; kick: string } }> = {
+export const CHARACTERS: Record<string, { url: string; scale: number; yOffset: number; rotationOffset: [number, number, number]; animations: { idle: string; run: string; jump: string; kick: string } }> = {
   robot: {
     url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
     scale: 0.4,
     yOffset: -0.3,
+    rotationOffset: [0, 0, 0],
     animations: { idle: 'Idle', run: 'Running', jump: 'Jump', kick: 'Punch' }
   },
   soldier: {
     url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/Soldier.glb',
     scale: 1.2,
     yOffset: -0.5,
-    animations: { idle: 'Idle', run: 'Run', jump: 'Run', kick: 'TPose' }
+    rotationOffset: [0, Math.PI, 0], // Soldier usually faces opposite
+    animations: { idle: 'Idle', run: 'Run', jump: 'Run', kick: 'Idle' }
   },
   fox: {
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb',
-    scale: 0.02,
-    yOffset: -0.5,
+    scale: 0.01, // Further increased scale
+    yOffset: -0.1, // Adjusted yOffset to prevent burying
+    rotationOffset: [0, 0, 0], // Reset rotation to see if it's better
     animations: { idle: 'Survey', run: 'Run', jump: 'Walk', kick: 'Survey' }
   }
 };
 
 export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
+  const outerGroup = useRef<THREE.Group>(null);
   const group = useRef<THREE.Group>(null);
   const characterConfig = CHARACTERS[state.character] || CHARACTERS['robot'];
   const { scene, animations } = useGLTF(characterConfig.url);
-  const { actions } = useAnimations(animations, group);
+  
+  const clonedScene = useMemo(() => {
+    const clone = SkeletonUtils.clone(scene);
+    return clone;
+  }, [scene]);
+
+  useEffect(() => {
+    clonedScene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        // Only clone material if we haven't already
+        if (!mesh.userData.materialCloned) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          mesh.userData.materialCloned = true;
+        }
+        if (mesh.material && 'color' in mesh.material) {
+           (mesh.material as THREE.MeshStandardMaterial).color.set(state.color);
+        }
+      }
+    });
+  }, [clonedScene, state.color]);
+
+  const clonedSceneRef = useMemo(() => ({ current: clonedScene }), [clonedScene]);
+  const { actions, names } = useAnimations(animations, clonedSceneRef);
   const [isKicking, setIsKicking] = useState(false);
   const lastKickRef = useRef(state.lastKickTime);
   const lastJumpRef = useRef(state.lastJumpTime);
@@ -47,46 +75,12 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
   const tempQuat = useRef(new THREE.Quaternion());
 
   useEffect(() => {
-    // Clone the scene so multiple players can use the same model without sharing materials incorrectly
-    const clonedScene = scene.clone();
-    
-    // Color the character based on team
-    clonedScene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        mesh.material = (mesh.material as THREE.Material).clone();
-        // The robot has multiple parts, let's color the main body parts
-        if (mesh.material && 'color' in mesh.material) {
-           (mesh.material as THREE.MeshStandardMaterial).color.set(state.color);
-        }
-      }
-    });
-
     if (group.current) {
-      group.current.clear();
-      group.current.add(clonedScene);
-      
-      // Scale the robot to fit the game
       group.current.scale.set(characterConfig.scale, characterConfig.scale, characterConfig.scale);
-      // Adjust position so it sits on the ground
       group.current.position.y = characterConfig.yOffset;
+      group.current.rotation.set(...characterConfig.rotationOffset);
     }
-
-    return () => {
-      // Properly dispose of cloned materials and geometries
-      clonedScene.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh;
-          mesh.geometry.dispose();
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach(m => m.dispose());
-          } else {
-            mesh.material.dispose();
-          }
-        }
-      });
-    };
-  }, [scene, state.color, characterConfig]);
+  }, [characterConfig]);
 
   // Check for new kicks
   useEffect(() => {
@@ -124,13 +118,16 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
     actionName = characterConfig.animations.run;
   }
 
+  // Fallback if animation name doesn't exist
+  const finalActionName = actions[actionName] ? actionName : (names[0] || '');
+
   useEffect(() => {
-    if (actions[actionName]) {
-      const action = actions[actionName];
+    if (finalActionName && actions[finalActionName]) {
+      const action = actions[finalActionName];
       action?.reset().fadeIn(0.1).play();
       
       // If it's a punch or jump, we don't want it to loop
-      if (actionName === characterConfig.animations.kick || actionName === characterConfig.animations.jump) {
+      if (finalActionName === characterConfig.animations.kick || finalActionName === characterConfig.animations.jump) {
         action.setLoop(THREE.LoopOnce, 1);
         action.clampWhenFinished = true;
       }
@@ -139,23 +136,24 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
         action?.fadeOut(0.1);
       };
     }
-  }, [actions, actionName, characterConfig]);
+  }, [actions, finalActionName, characterConfig]);
 
   useFrame(() => {
-    if (group.current) {
+    if (outerGroup.current) {
       // Interpolate position and rotation for smoothness
-      // The parent group handles the position, the model group handles scale/offset
       tempVec.current.set(...state.position);
-      group.current.parent?.position.lerp(tempVec.current, 0.2);
+      outerGroup.current.position.lerp(tempVec.current, 0.2);
       
       tempQuat.current.set(...state.rotation);
-      group.current.parent?.quaternion.slerp(tempQuat.current, 0.2);
+      outerGroup.current.quaternion.slerp(tempQuat.current, 0.2);
     }
   });
 
   return (
-    <group position={state.position} quaternion={state.rotation}>
-      <group ref={group} dispose={null} />
+    <group ref={outerGroup}>
+      <group ref={group} dispose={null}>
+        <primitive object={clonedScene} />
+      </group>
       
       <Html
         position={[0, 2.8, 0]}

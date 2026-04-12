@@ -21,10 +21,10 @@ import { SettingsModal } from './components/SettingsModal';
 import { MobileControls } from './components/MobileControls';
 import { useGameStore } from './store';
 import { soundManager } from './utils/audio';
-import { Trophy, Settings, Copy, AlertCircle, LogOut, X, Check } from 'lucide-react';
+import { adManager } from './utils/ads';
+import { LogOut, X, Check, Trophy, Settings, Copy } from 'lucide-react';
 import { WORLD_CUP_COUNTRIES } from './constants/countries';
 import { motion, AnimatePresence } from 'motion/react';
-import { triggerHappyMoment, requestAd } from './utils/poki';
 
 export default function App() {
   const socketRef = useRef<Socket | null>(null);
@@ -50,7 +50,6 @@ export default function App() {
   const [joystickInput, setJoystickInput] = useState({ x: 0, z: 0 });
   const prevMatchStateRef = useRef(gameState.matchState);
   const prevRoomIdRef = useRef(roomId);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Handle room transition animation
   useEffect(() => {
@@ -76,46 +75,57 @@ export default function App() {
       soundManager.init();
       window.removeEventListener('keydown', initAudio);
       window.removeEventListener('mousedown', initAudio);
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('touchstart', initAudio);
     };
     window.addEventListener('keydown', initAudio);
     window.addEventListener('mousedown', initAudio);
+    window.addEventListener('click', initAudio);
+    window.addEventListener('touchstart', initAudio);
     return () => {
       window.removeEventListener('keydown', initAudio);
       window.removeEventListener('mousedown', initAudio);
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('touchstart', initAudio);
     };
   }, []);
 
-  // Handle match state sounds
+  // Global click sound for buttons
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button') || target.tagName === 'BUTTON') {
+        soundManager.playClick();
+      }
+    };
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
+
+  // Handle music state based on lobby
+  useEffect(() => {
+    soundManager.setMusicState(inLobby);
+  }, [inLobby]);
+
+  // Handle match state sounds and ads
   useEffect(() => {
     if (prevMatchStateRef.current !== gameState.matchState) {
       if (gameState.matchState === 'playing') {
         soundManager.playWhistle();
       } else if (gameState.matchState === 'goal') {
         soundManager.playGoal();
-        triggerHappyMoment();
+        adManager.triggerHappyMoment();
       } else if (gameState.matchState === 'gameover') {
         soundManager.playWhistle();
         setTimeout(() => soundManager.playWhistle(), 400); // Double whistle for game over
-        
-        // Mid-roll ad on game over
-        setTimeout(() => {
-          requestAd('midgame');
-        }, 1500); // Delay ad slightly so player sees the game over screen
+        adManager.triggerMidRoll();
       }
       prevMatchStateRef.current = gameState.matchState;
     }
   }, [gameState.matchState]);
 
   useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
-
-  useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    soundManager.init();
     soundManager.setVolume(useGameStore.getState().settings.volume);
     
     // Determine backend URL based on regional setting
@@ -161,7 +171,7 @@ export default function App() {
     });
 
     newSocket.on('error', (msg) => {
-      setErrorMessage(msg);
+      alert(msg);
       setInLobby(true);
     });
 
@@ -172,6 +182,17 @@ export default function App() {
 
     newSocket.on('goal', ({ team, score }) => {
       console.log(`Goal for ${team}! Score:`, score);
+      const gameState = useGameStore.getState().gameState;
+      useGameStore.getState().setGameState({
+        ...gameState,
+        score
+      });
+    });
+
+    newSocket.on('reward', ({ coins, exp }) => {
+      console.log(`Reward received: ${coins} coins, ${exp} exp`);
+      useGameStore.getState().addCoins(coins);
+      useGameStore.getState().addExp(exp);
     });
 
     return () => {
@@ -189,8 +210,8 @@ export default function App() {
     }
 
     if (socketRef.current) {
-      const { joinMode, roomCodeToJoin, trainingDifficulty, selectedWorldCupCountry, isWorldCup } = useGameStore.getState();
-      const payload = { name: playerName || 'Player', worldCupCountry: selectedWorldCupCountry, isWorldCup };
+      const { joinMode, roomCodeToJoin, trainingDifficulty, selectedWorldCupCountry, isWorldCup, selectedCharacter } = useGameStore.getState();
+      const payload = { name: playerName || 'Player', worldCupCountry: selectedWorldCupCountry, isWorldCup, character: selectedCharacter };
       
       if (joinMode === 'create') {
         socketRef.current.emit('createPrivateRoom', payload);
@@ -568,39 +589,6 @@ export default function App() {
               </div>
             </motion.div>
           </div>
-        )}
-
-        {/* Modern Error Notification */}
-        {errorMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -50, x: '-50%' }}
-            animate={{ opacity: 1, y: 0, x: '-50%' }}
-            exit={{ opacity: 0, y: -50, x: '-50%' }}
-            className="fixed top-8 left-1/2 z-[200] w-full max-w-sm"
-          >
-            <div className="mx-4 bg-gray-950/80 backdrop-blur-xl border border-red-500/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(239,68,68,0.2)] flex items-center gap-4">
-              <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
-                <AlertCircle size={20} className="text-red-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-white font-black italic uppercase text-xs tracking-wider mb-0.5">Room Error</h4>
-                <p className="text-white/60 text-sm font-medium truncate">{errorMessage}</p>
-              </div>
-              <button 
-                onClick={() => setErrorMessage(null)}
-                className="p-1.5 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            {/* Progress bar for auto-dismiss */}
-            <motion.div 
-              initial={{ width: '100%' }}
-              animate={{ width: '0%' }}
-              transition={{ duration: 5, ease: 'linear' }}
-              className="absolute bottom-0 left-6 right-6 h-0.5 bg-red-500/30 rounded-full"
-            />
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

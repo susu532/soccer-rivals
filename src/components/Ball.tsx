@@ -7,17 +7,19 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '../store';
 import { Trail } from '@react-three/drei';
+import { soundManager } from '../utils/audio';
 
 export function Ball() {
   const meshRef = useRef<THREE.Mesh>(null);
   const ballState = useGameStore((state) => state.gameState.ball);
   const tempVec = useRef(new THREE.Vector3());
   const tempQuat = useRef(new THREE.Quaternion());
+  const prevVelocity = useRef([...ballState.velocity]);
 
   useFrame(() => {
     if (meshRef.current) {
@@ -27,6 +29,21 @@ export function Ball() {
       meshRef.current.quaternion.slerp(tempQuat.current, 0.2);
     }
   });
+
+  useEffect(() => {
+    const [vx, vy, vz] = ballState.velocity;
+    const [px, py, pz] = prevVelocity.current;
+    
+    const dvx = Math.abs(vx - px);
+    const dvy = Math.abs(vy - py);
+    const dvz = Math.abs(vz - pz);
+    
+    if (dvy > 5 || dvx > 5 || dvz > 5) {
+      soundManager.playBounce();
+    }
+    
+    prevVelocity.current = [...ballState.velocity];
+  }, [ballState.velocity]);
 
   const speed = Math.sqrt(ballState.velocity[0]**2 + ballState.velocity[1]**2 + ballState.velocity[2]**2);
 
