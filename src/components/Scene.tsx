@@ -86,6 +86,7 @@ function CameraController() {
   }, [setCameraAngle, gl.domElement]);
 
   const target = useRef(new THREE.Vector3());
+  const currentTarget = useRef(new THREE.Vector3());
 
   useFrame(() => {
     const gameState = useGameStore.getState().gameState;
@@ -100,13 +101,15 @@ function CameraController() {
       (playerPos[2] + ballPos[2]) / 2
     );
 
+    currentTarget.current.lerp(target.current, 0.2);
+
     // Calculate camera position based on spherical coordinates
     const x = distance * Math.sin(rotation.current.phi) * Math.sin(rotation.current.theta);
     const y = distance * Math.cos(rotation.current.phi);
     const z = distance * Math.sin(rotation.current.phi) * Math.cos(rotation.current.theta);
 
-    camera.position.set(target.current.x + x, target.current.y + y, target.current.z + z);
-    camera.lookAt(target.current);
+    camera.position.set(currentTarget.current.x + x, currentTarget.current.y + y, currentTarget.current.z + z);
+    camera.lookAt(currentTarget.current);
   });
 
   return null;
