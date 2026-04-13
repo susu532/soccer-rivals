@@ -19,21 +19,21 @@ export const CHARACTERS: Record<string, { url: string; scale: number; yOffset: n
   robot: {
     url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
     scale: 0.4,
-    yOffset: -0.3,
+    yOffset: -1.0,
     rotationOffset: [0, 0, 0],
     animations: { idle: 'Idle', run: 'Running', jump: 'Jump', kick: 'Punch' }
   },
   soldier: {
     url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/Soldier.glb',
     scale: 1.2,
-    yOffset: -0.5,
+    yOffset: -1.0,
     rotationOffset: [0, Math.PI, 0], // Soldier usually faces opposite
     animations: { idle: 'Idle', run: 'Run', jump: 'Run', kick: 'Idle' }
   },
   fox: {
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb',
     scale: 0.01, // Further increased scale
-    yOffset: -0.1, // Adjusted yOffset to prevent burying
+    yOffset: -0.5, // Adjusted yOffset to prevent burying
     rotationOffset: [0, 0, 0], // Reset rotation to see if it's better
     animations: { idle: 'Survey', run: 'Run', jump: 'Walk', kick: 'Survey' }
   }
