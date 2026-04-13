@@ -16,7 +16,7 @@ export function Field() {
   const fieldLength = 40;
   const goalWidth = 8;
   const goalDepth = 2;
-  const goalHeight = 3;
+  const goalHeight = 3.6;
   const postRadius = 0.12;
 
   // Create a striped grass texture programmatically
