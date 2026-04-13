@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import { Field } from './Field';
 import { Ball } from './Ball';
 import { Player } from './Player';
+import { PlayerIndicators } from './PlayerIndicators';
 import { useGameStore, PlayerState } from '../store';
 import { BurstEffect, DustTrail } from './Particles';
 
@@ -222,6 +223,7 @@ export function Scene() {
 
       <GlobalEffects />
       <CameraController />
+      <PlayerIndicators />
     </Canvas>
   );
 }
