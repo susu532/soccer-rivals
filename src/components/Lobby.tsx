@@ -9,7 +9,7 @@
  */
 import { useRef, useEffect, useMemo, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF, useAnimations, Environment, Float, ContactShadows, View } from '@react-three/drei';
+import { useGLTF, useAnimations, Environment, Float, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { motion, AnimatePresence } from 'motion/react';
@@ -233,17 +233,17 @@ function CharacterModel({ charKey }: { charKey: string }) {
   );
 }
 
-function CharacterIconPreview({ charKey, trackRef }: { charKey: string; trackRef: React.RefObject<HTMLDivElement> }) {
+function CharacterIconPreview({ charKey }: { charKey: string }) {
   return (
-    <div ref={trackRef} className="w-full h-full">
-      <View track={trackRef}>
+    <div className="w-full h-full">
+      <Canvas camera={{ position: [0, 0, 2.5], fov: 35 }} gl={{ antialias: true }}>
         <ambientLight intensity={1.5} />
         <pointLight position={[5, 5, 5]} intensity={2} />
         <Environment preset="city" />
         <Suspense fallback={null}>
           <CharacterModel charKey={charKey} />
         </Suspense>
-      </View>
+      </Canvas>
     </div>
   );
 }
@@ -271,17 +271,6 @@ export function Lobby() {
   const exp = useGameStore((state) => state.exp);
   const addCoins = useGameStore((state) => state.addCoins);
   const [isWatchingAd, setIsWatchingAd] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const iconRefs = useRef<Record<string, React.RefObject<HTMLDivElement>>>({});
-
-  // Initialize refs for each character icon
-  useMemo(() => {
-    Object.keys(CHARACTERS).forEach(key => {
-      if (!iconRefs.current[key]) {
-        iconRefs.current[key] = { current: null };
-      }
-    });
-  }, []);
 
   const level = Math.floor(exp / 100) + 1;
   const expInLevel = exp % 100;
@@ -323,7 +312,7 @@ export function Lobby() {
   };
 
   return (
-    <div ref={containerRef} className="fixed inset-0 w-full h-full bg-gradient-to-br from-vibrant-purple via-vibrant-pink to-vibrant-orange overflow-hidden font-sans select-none">
+    <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-vibrant-purple via-vibrant-pink to-vibrant-orange overflow-hidden font-sans select-none">
       {/* Splash Screen Transition */}
       <AnimatePresence>
         {showSplash && (
@@ -978,7 +967,7 @@ export function Lobby() {
                     >
                       <div className="w-24 h-24 md:w-32 md:h-32 bg-black/40 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform overflow-hidden relative">
                         <Suspense fallback={<User size={48} className="text-white/10 animate-pulse" />}>
-                          <CharacterIconPreview charKey={charKey} trackRef={iconRefs.current[charKey]} />
+                          <CharacterIconPreview charKey={charKey} />
                         </Suspense>
                         
                         {!isUnlocked && (
@@ -1070,18 +1059,6 @@ export function Lobby() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Global Canvas for Views */}
-      <div className="fixed inset-0 pointer-events-none z-[150]">
-        <Canvas 
-          eventSource={containerRef} 
-          className="w-full h-full"
-          camera={{ position: [0, 0, 2.5], fov: 35 }}
-          gl={{ antialias: true, alpha: true }}
-        >
-          <View.Port />
-        </Canvas>
-      </div>
     </div>
   );
 }
