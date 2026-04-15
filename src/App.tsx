@@ -27,14 +27,13 @@ import { WORLD_CUP_COUNTRIES } from './constants/countries';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const setGameState = useGameStore((state) => state.setGameState);
   const setMyId = useGameStore((state) => state.setMyId);
   const gameState = useGameStore((state) => state.gameState);
   const inLobby = useGameStore((state) => state.inLobby);
   const setInLobby = useGameStore((state) => state.setInLobby);
   const playerName = useGameStore((state) => state.playerName);
-  const selectedWorldCupCountry = useGameStore((state) => state.selectedWorldCupCountry);
   const settings = useGameStore((state) => state.settings);
 
   const roomId = useGameStore((state) => state.roomId);
@@ -46,14 +45,16 @@ export default function App() {
   const [showMatchTransition, setShowMatchTransition] = useState(false);
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [showInMatchSettings, setShowInMatchSettings] = useState(false);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isTouchDevice] = useState(() => 'ontouchstart' in window || navigator.maxTouchPoints > 0);
   const [joystickInput, setJoystickInput] = useState({ x: 0, z: 0 });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const prevMatchStateRef = useRef(gameState.matchState);
   const prevRoomIdRef = useRef(roomId);
 
   // Handle room transition animation
   useEffect(() => {
     if (prevRoomIdRef.current === 'FREEPLAY' && roomId && roomId !== 'FREEPLAY') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowMatchTransition(true);
       const timer = setTimeout(() => setShowMatchTransition(false), 2500);
       return () => clearTimeout(timer);
@@ -125,7 +126,6 @@ export default function App() {
   }, [gameState.matchState]);
 
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
     soundManager.setVolume(useGameStore.getState().settings.volume);
     
     // Determine backend URL based on regional setting
@@ -143,11 +143,11 @@ export default function App() {
     console.log(`Connecting to ${useGameStore.getState().settings.server} server: ${backendUrl || 'Default (Same Origin)'}`);
     
     const newSocket = io(backendUrl, {
-      transports: ['websocket'], // Prefer websockets for game logic
       reconnection: true,
     });
     
-    socketRef.current = newSocket;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSocket(newSocket);
 
     newSocket.on('init', ({ id, state, roomId, isPrivate }) => {
       setMyId(id);
@@ -160,7 +160,7 @@ export default function App() {
     });
 
     newSocket.on('playerLeft', (id) => {
-      if (id === socketRef.current?.id) {
+      if (id === newSocket.id) {
         setInLobby(true);
         useGameStore.getState().setRoomId(null);
       }
@@ -171,7 +171,7 @@ export default function App() {
     });
 
     newSocket.on('error', (msg) => {
-      alert(msg);
+      setErrorMessage(msg);
       setInLobby(true);
     });
 
@@ -197,30 +197,30 @@ export default function App() {
 
     return () => {
       newSocket.disconnect();
-      socketRef.current = null;
+      setSocket(null);
     };
-  }, [setGameState, setMyId, settings.server]); // Re-connect when server setting changes
+  }, [setGameState, setMyId, settings.server, setInLobby]); // Re-connect when server setting changes
 
   useEffect(() => {
     if (inLobby) {
-      if (socketRef.current) {
-        socketRef.current.emit('leave');
+      if (socket) {
+        socket.emit('leave');
       }
       return;
     }
 
-    if (socketRef.current) {
+    if (socket) {
       const { joinMode, roomCodeToJoin, trainingDifficulty, selectedWorldCupCountry, isWorldCup, selectedCharacter } = useGameStore.getState();
       const payload = { name: playerName || 'Player', worldCupCountry: selectedWorldCupCountry, isWorldCup, character: selectedCharacter };
       
       if (joinMode === 'create') {
-        socketRef.current.emit('createPrivateRoom', payload);
+        socket.emit('createPrivateRoom', payload);
       } else if (joinMode === 'join' && roomCodeToJoin) {
-        socketRef.current.emit('joinPrivateRoom', { ...payload, roomCode: roomCodeToJoin });
+        socket.emit('joinPrivateRoom', { ...payload, roomCode: roomCodeToJoin });
       } else if (joinMode === 'training' && trainingDifficulty) {
-        socketRef.current.emit('startTraining', { ...payload, difficulty: trainingDifficulty });
+        socket.emit('startTraining', { ...payload, difficulty: trainingDifficulty });
       } else {
-        socketRef.current.emit('joinQueue', payload);
+        socket.emit('joinQueue', payload);
       }
     }
 
@@ -230,11 +230,11 @@ export default function App() {
       const { keyBindings } = useGameStore.getState().settings;
 
       setKeys((k) => {
-        let newKeys = { ...k };
+        const newKeys = { ...k };
         let changed = false;
-        if ((key === keyBindings.forward || key === 'z') && !k.w) { newKeys.w = true; changed = true; }
+        if (key === keyBindings.forward && !k.w) { newKeys.w = true; changed = true; }
         if (key === keyBindings.backward && !k.s) { newKeys.s = true; changed = true; }
-        if ((key === keyBindings.left || key === 'q') && !k.a) { newKeys.a = true; changed = true; }
+        if (key === keyBindings.left && !k.a) { newKeys.a = true; changed = true; }
         if (key === keyBindings.right && !k.d) { newKeys.d = true; changed = true; }
         if (key === keyBindings.jump && !k.jump) { newKeys.jump = true; changed = true; }
         if (key === keyBindings.kick && !k.kick) { newKeys.kick = true; changed = true; }
@@ -252,11 +252,11 @@ export default function App() {
       const { keyBindings } = useGameStore.getState().settings;
 
       setKeys((k) => {
-        let newKeys = { ...k };
+        const newKeys = { ...k };
         let changed = false;
-        if ((key === keyBindings.forward || key === 'z') && k.w) { newKeys.w = false; changed = true; }
+        if (key === keyBindings.forward && k.w) { newKeys.w = false; changed = true; }
         if (key === keyBindings.backward && k.s) { newKeys.s = false; changed = true; }
-        if ((key === keyBindings.left || key === 'q') && k.a) { newKeys.a = false; changed = true; }
+        if (key === keyBindings.left && k.a) { newKeys.a = false; changed = true; }
         if (key === keyBindings.right && k.d) { newKeys.d = false; changed = true; }
         if (key === keyBindings.jump && k.jump) { newKeys.jump = false; changed = true; }
         if (key === keyBindings.kick && k.kick) { newKeys.kick = false; changed = true; }
@@ -288,13 +288,13 @@ export default function App() {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [inLobby]);
+  }, [inLobby, socket, playerName]);
 
   useEffect(() => {
     if (inLobby) return; // Don't send input in lobby
 
     const interval = setInterval(() => {
-      if (!socketRef.current) return;
+      if (!socket) return;
 
       let dx = 0;
       let dz = 0;
@@ -346,11 +346,11 @@ export default function App() {
       const x = inputX * cos + inputZ * sin;
       const z = -inputX * sin + inputZ * cos;
 
-      socketRef.current.emit('input', { x, z, kick: keys.kick, jump: keys.jump, cameraAngle: angle });
+      socket.emit('input', { x, z, kick: keys.kick, jump: keys.jump, cameraAngle: angle });
     }, 1000 / 30); // Send input at 30fps
 
     return () => clearInterval(interval);
-  }, [keys, joystickInput, inLobby]);
+  }, [keys, joystickInput, inLobby, socket]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -359,8 +359,8 @@ export default function App() {
   };
 
   const handleLeaveMatch = () => {
-    if (socketRef.current) {
-      socketRef.current.emit('leave');
+    if (socket) {
+      socket.emit('leave');
     }
     setInLobby(true);
     setShowLeaveConfirm(false);
@@ -450,9 +450,21 @@ export default function App() {
           <div className="hidden md:block bg-black/50 text-white p-4 rounded-lg backdrop-blur-sm text-sm">
             <h2 className="font-bold mb-2">Controls</h2>
             <ul className="space-y-1">
-              <li><kbd className="bg-gray-700 px-2 py-1 rounded">WASD / ZQSD</kbd> Move</li>
-              <li><kbd className="bg-gray-700 px-2 py-1 rounded">F / Click</kbd> Kick</li>
-              <li><kbd className="bg-gray-700 px-2 py-1 rounded">SPACE</kbd> Jump</li>
+              <li>
+                <kbd className="bg-gray-700 px-2 py-1 rounded uppercase">
+                  {settings.keyBindings.forward}{settings.keyBindings.left}{settings.keyBindings.backward}{settings.keyBindings.right}
+                </kbd> Move
+              </li>
+              <li>
+                <kbd className="bg-gray-700 px-2 py-1 rounded uppercase">
+                  {settings.keyBindings.kick === ' ' ? 'SPACE' : settings.keyBindings.kick}
+                </kbd> / Click Kick
+              </li>
+              <li>
+                <kbd className="bg-gray-700 px-2 py-1 rounded uppercase">
+                  {settings.keyBindings.jump === ' ' ? 'SPACE' : settings.keyBindings.jump}
+                </kbd> Jump
+              </li>
               <li><kbd className="bg-gray-700 px-2 py-1 rounded">T</kbd> Toggle Chat</li>
               <li><kbd className="bg-gray-700 px-2 py-1 rounded">Mouse</kbd> Rotate Camera</li>
             </ul>
@@ -505,7 +517,7 @@ export default function App() {
         )}
       </AnimatePresence>
       {/* Chat Section */}
-      <Chat socket={socketRef.current} />
+      <Chat socket={socket} />
 
       {/* Mobile Controls */}
       {!inLobby && (isTouchDevice || settings.forceMobileControls) && (
@@ -588,6 +600,14 @@ export default function App() {
                 </button>
               </div>
             </motion.div>
+          </div>
+        )}
+        {errorMessage && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full font-bold shadow-lg z-[200] flex items-center gap-2">
+            <span>{errorMessage}</span>
+            <button onClick={() => setErrorMessage(null)} className="ml-4 hover:text-white/80">
+              <X size={16} />
+            </button>
           </div>
         )}
       </AnimatePresence>

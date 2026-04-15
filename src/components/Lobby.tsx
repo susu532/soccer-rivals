@@ -13,69 +13,223 @@ import { useGLTF, useAnimations, Environment, Float, ContactShadows } from '@rea
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, Play, Trophy, Snowflake, Info, Gamepad2, User, ChevronRight, X, Edit2, Globe, Palette, Lock, Tv, Loader2, Coins } from 'lucide-react';
+import { Settings, Play, Trophy, Info, Gamepad2, User, ChevronRight, X, Edit2, Globe, Palette, Lock, Tv, Loader2, Coins } from 'lucide-react';
 import { useGameStore } from '../store';
 import { SettingsModal } from './SettingsModal';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
-import { CHARACTERS } from './Player';
+import { CHARACTERS } from '../constants/characters';
 import { adManager } from '../utils/ads';
 
 function PlayerPreview() {
   const selectedCharacter = useGameStore((state) => state.selectedCharacter);
   const characterConfig = CHARACTERS[selectedCharacter] || CHARACTERS['robot'];
   const group = useRef<THREE.Group>(null);
-  const { scene, animations } = useGLTF(characterConfig.url);
+  const { scene, animations: defaultAnimations } = useGLTF(characterConfig.url);
   
-  const clonedScene = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  const clonedSceneRef = useMemo(() => ({ current: clonedScene }), [clonedScene]);
-  const { actions } = useAnimations(animations, clonedSceneRef);
+  const animations = useMemo(() => {
+    return defaultAnimations.map((anim, index) => {
+      const clone = anim.clone();
+      if (clone.name === 'mixamo.com') {
+        clone.name = `mixamo.com${index}`;
+      }
+      clone.tracks = clone.tracks.filter(track => !track.name.includes('morphTargetInfluences'));
+      clone.tracks.forEach(track => {
+        track.name = track.name.replace(/:/g, '').replace(/_\d+(?=\.)/g, '');
+
+        // Remove root motion (horizontal movement) to prevent rubber-banding
+        if (track.name.match(/(Hips|Pelvis|Root)\.position/i)) {
+          const initialX = track.values[0];
+          const initialZ = track.values[2];
+          for (let i = 0; i < track.values.length; i += 3) {
+            track.values[i] = initialX;
+            track.values[i + 2] = initialZ;
+          }
+        }
+      });
+      return clone;
+    });
+  }, [defaultAnimations]);
+  
+  const clonedScene = useMemo(() => {
+    const clone = SkeletonUtils.clone(scene);
+    clone.traverse((child) => {
+      if ((child as THREE.Light).isLight) {
+        child.visible = false;
+        (child as THREE.Light).intensity = 0;
+      }
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.frustumCulled = false;
+        
+        // Adjust material for custom models to remove all shiny reflections
+        if (characterConfig.isCustom) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map(mat => {
+              if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+                const m = mat.clone();
+                m.envMapIntensity = 0;
+                m.metalness = 0;
+                m.roughness = 1;
+                m.emissive = new THREE.Color(0x000000);
+                return m;
+              }
+              return mat;
+            });
+          } else if (mesh.material instanceof THREE.MeshStandardMaterial || mesh.material instanceof THREE.MeshPhysicalMaterial) {
+            mesh.material = mesh.material.clone();
+            mesh.material.envMapIntensity = 0;
+            mesh.material.metalness = 0;
+            mesh.material.roughness = 1;
+            mesh.material.emissive = new THREE.Color(0x000000);
+          }
+        }
+      }
+    });
+    return clone;
+  }, [scene, characterConfig.isCustom]);
+  
+  const { actions, names } = useAnimations(animations, group);
 
   useEffect(() => {
+    if (names.length === 0) return;
     const idleAnim = characterConfig.animations.idle;
-    if (actions[idleAnim]) {
-      actions[idleAnim].play();
+    // Try to find the action, fallback to first available if not found
+    const actionName = actions[idleAnim] ? idleAnim : (names[0] || '');
+    
+    if (actionName && actions[actionName]) {
+      const action = actions[actionName];
+      action.reset().fadeIn(0.3).play();
       return () => {
-        actions[idleAnim].fadeOut(0.5);
+        action.fadeOut(0.3);
       };
     }
-  }, [actions, characterConfig]);
+  }, [actions, characterConfig, names]);
+
+  // Normalize scale and position based on character config
+  const baseScale = window.innerWidth < 768 ? 0.45 : 0.6;
+  const normalization = 1 / (CHARACTERS['robot']?.scale || 0.4);
+  const normalizedScale = characterConfig.scale * normalization * baseScale;
+  const normalizedY = characterConfig.yOffset * normalization * baseScale;
 
   return (
     <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-      <primitive 
-        ref={group} 
-        object={clonedScene} 
-        scale={(window.innerWidth < 768 ? 0.45 : 0.6) * (characterConfig.scale / CHARACTERS['robot'].scale)} 
-        position={[0, window.innerWidth < 768 ? -1.2 : -1.5, 0]} 
-        rotation={[
-          characterConfig.rotationOffset[0],
-          characterConfig.rotationOffset[1] - Math.PI / 4,
-          characterConfig.rotationOffset[2]
-        ]} 
-      />
+      <group ref={group} dispose={null}>
+        <primitive 
+          object={clonedScene} 
+          scale={normalizedScale} 
+          position={[0, normalizedY, 0]} 
+          rotation={[
+            characterConfig.rotationOffset[0],
+            characterConfig.rotationOffset[1] - Math.PI / 4,
+            characterConfig.rotationOffset[2]
+          ]} 
+        />
+      </group>
     </Float>
   );
 }
 
 function CharacterModel({ charKey }: { charKey: string }) {
   const characterConfig = CHARACTERS[charKey];
-  const { scene } = useGLTF(characterConfig.url);
-  const clonedScene = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const { scene, animations: defaultAnimations } = useGLTF(characterConfig.url);
+  const group = useRef<THREE.Group>(null);
+  
+  const animations = useMemo(() => {
+    return defaultAnimations.map((anim, index) => {
+      const clone = anim.clone();
+      if (clone.name === 'mixamo.com') {
+        clone.name = `mixamo.com${index}`;
+      }
+      clone.tracks = clone.tracks.filter(track => !track.name.includes('morphTargetInfluences'));
+      clone.tracks.forEach(track => {
+        track.name = track.name.replace(/:/g, '').replace(/_\d+(?=\.)/g, '');
 
-  // Adjust Y position to center characters better in the icon squares
-  const yPos = charKey === 'fox' ? -0.4 : -1.5;
+        // Remove root motion (horizontal movement) to prevent rubber-banding
+        if (track.name.match(/(Hips|Pelvis|Root)\.position/i)) {
+          const initialX = track.values[0];
+          const initialZ = track.values[2];
+          for (let i = 0; i < track.values.length; i += 3) {
+            track.values[i] = initialX;
+            track.values[i + 2] = initialZ;
+          }
+        }
+      });
+      return clone;
+    });
+  }, [defaultAnimations]);
+
+  const clonedScene = useMemo(() => {
+    const clone = SkeletonUtils.clone(scene);
+    clone.traverse((child) => {
+      if ((child as THREE.Light).isLight) {
+        child.visible = false;
+        (child as THREE.Light).intensity = 0;
+      }
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.frustumCulled = false;
+
+        // Adjust material for custom models to remove all shiny reflections
+        if (characterConfig.isCustom) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map(mat => {
+              if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+                const m = mat.clone();
+                m.envMapIntensity = 0;
+                m.metalness = 0;
+                m.roughness = 1;
+                m.emissive = new THREE.Color(0x000000);
+                return m;
+              }
+              return mat;
+            });
+          } else if (mesh.material instanceof THREE.MeshStandardMaterial || mesh.material instanceof THREE.MeshPhysicalMaterial) {
+            mesh.material = mesh.material.clone();
+            mesh.material.envMapIntensity = 0;
+            mesh.material.metalness = 0;
+            mesh.material.roughness = 1;
+            mesh.material.emissive = new THREE.Color(0x000000);
+          }
+        }
+      }
+    });
+    return clone;
+  }, [scene, characterConfig.isCustom]);
+
+  const { actions, names } = useAnimations(animations, group);
+
+  useEffect(() => {
+    if (names.length === 0) return;
+    const idleAnim = characterConfig.animations.idle;
+    const actionName = actions[idleAnim] ? idleAnim : (names[0] || '');
+    
+    if (actionName && actions[actionName]) {
+      const action = actions[actionName];
+      action.reset().fadeIn(0.3).play();
+      return () => {
+        action.fadeOut(0.3);
+      };
+    }
+  }, [actions, characterConfig, names]);
+
+  // Normalize scale and position for icons
+  const normalization = 1 / (CHARACTERS['robot']?.scale || 0.4);
+  const iconScale = characterConfig.scale * normalization * 0.5;
+  const iconY = characterConfig.yOffset * normalization * 0.5;
 
   return (
-    <primitive 
-      object={clonedScene} 
-      scale={characterConfig.scale * 1.2} 
-      position={[0, yPos, 0]} 
-      rotation={[
-        characterConfig.rotationOffset[0],
-        characterConfig.rotationOffset[1] - Math.PI / 6,
-        characterConfig.rotationOffset[2]
-      ]} 
-    />
+    <group ref={group} dispose={null}>
+      <primitive 
+        object={clonedScene} 
+        scale={iconScale} 
+        position={[0, iconY, 0]} 
+        rotation={[
+          characterConfig.rotationOffset[0],
+          characterConfig.rotationOffset[1] - Math.PI / 6,
+          characterConfig.rotationOffset[2]
+        ]} 
+      />
+    </group>
   );
 }
 
@@ -86,7 +240,9 @@ function CharacterIconPreview({ charKey }: { charKey: string }) {
         <ambientLight intensity={1.5} />
         <pointLight position={[5, 5, 5]} intensity={2} />
         <Environment preset="city" />
-        <CharacterModel charKey={charKey} />
+        <Suspense fallback={null}>
+          <CharacterModel charKey={charKey} />
+        </Suspense>
       </Canvas>
     </div>
   );
@@ -394,15 +550,25 @@ export function Lobby() {
       )}
 
       {/* Center: 3D Preview */}
-      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-0 transition-all duration-500 ${showCustomizeModal ? 'w-full h-[40%] md:h-full md:w-1/2' : 'w-full h-full'}`}>
-        <div className="w-full h-full max-w-2xl max-h-[400px] md:max-h-[600px] -translate-y-10 md:translate-y-0">
-          <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-            <ambientLight intensity={0.7} />
-            <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} color="#00ffff" />
+      <div 
+        className={`absolute top-0 left-0 flex items-center justify-center pointer-events-none transition-all duration-500 ${
+          showCustomizeModal 
+            ? 'w-full h-[45%] md:h-full md:w-1/2 z-40' 
+            : 'w-full h-full z-0'
+        }`}
+      >
+        <div className={`w-full h-full transition-all duration-500 ${
+          showCustomizeModal ? 'max-w-none max-h-none' : 'max-w-2xl max-h-[400px] md:max-h-[600px] -translate-y-10 md:translate-y-0'
+        }`}>
+          <Canvas camera={{ position: [0, 0, 5], fov: 45 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
+            <ambientLight intensity={0.8} />
+            <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2.5} color="#00ffff" />
             <pointLight position={[-10, -10, -10]} intensity={2} color="#9d00ff" />
-            <pointLight position={[0, 5, 0]} intensity={1} color="#ffff00" />
+            <pointLight position={[0, 5, 0]} intensity={1.5} color="#ffffff" />
             <Environment preset="city" />
-            <PlayerPreview />
+            <Suspense fallback={null}>
+              <PlayerPreview key={selectedCharacter} />
+            </Suspense>
             <ContactShadows position={[0, -1.5, 0]} opacity={0.4} scale={10} blur={2} far={4.5} />
           </Canvas>
         </div>
@@ -775,21 +941,22 @@ export function Lobby() {
                     <button
                       key={charKey}
                       onClick={() => {
+                        const config = CHARACTERS[charKey];
                         if (isUnlocked) {
-                          setSelectedCharacter(charKey as 'robot' | 'soldier' | 'fox');
-                        } else if (charKey === 'fox') {
-                          if (coins >= 2200) {
-                            addCoins(-2200);
+                          setSelectedCharacter(charKey as 'robot' | 'fox' | 'cristiano ronaldo' | 'kobe' | 'lamin yamal');
+                        } else if (config.unlockType === 'coins') {
+                          if (coins >= (config.price || 0)) {
+                            addCoins(-(config.price || 0));
                             unlockCharacter(charKey);
-                            setSelectedCharacter(charKey as 'robot' | 'soldier' | 'fox');
+                            setSelectedCharacter(charKey as 'robot' | 'fox' | 'cristiano ronaldo' | 'kobe' | 'lamin yamal');
                           }
-                        } else {
+                        } else if (config.unlockType === 'ads') {
                           setIsWatchingAd(charKey);
-                          setTimeout(() => {
+                          adManager.triggerRewarded(() => {
                             unlockCharacter(charKey);
-                            setSelectedCharacter(charKey as 'robot' | 'soldier' | 'fox');
+                            setSelectedCharacter(charKey as 'robot' | 'fox' | 'cristiano ronaldo' | 'kobe' | 'lamin yamal');
                             setIsWatchingAd(null);
-                          }, 3000);
+                          });
                         }
                       }}
                       className={`p-6 md:p-8 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group relative overflow-hidden ${
@@ -805,19 +972,21 @@ export function Lobby() {
                         
                         {!isUnlocked && (
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 z-10">
-                            {charKey === 'fox' ? (
+                            {CHARACTERS[charKey].unlockType === 'coins' ? (
                               <>
                                 <div className="bg-vibrant-yellow p-2 rounded-full text-black shadow-[0_0_15px_rgba(255,255,0,0.5)]">
                                   <Coins size={20} />
                                 </div>
-                                <span className={`text-[24px] font-black uppercase italic ${coins >= 2200 ? 'text-vibrant-yellow' : 'text-red-1000'}`}>2200 Coins</span>
+                                <span className={`text-[24px] font-black uppercase italic ${coins >= (CHARACTERS[charKey].price || 0) ? 'text-vibrant-yellow' : 'text-red-500'}`}>
+                                  {CHARACTERS[charKey].price}
+                                </span>
                               </>
                             ) : (
                               <>
                                 <div className="bg-vibrant-yellow p-2 rounded-full text-black shadow-[0_0_15px_rgba(255,255,0,0.5)]">
                                   <Tv size={20} />
                                 </div>
-                                <span className="text-[8px] font-black uppercase italic text-vibrant-yellow">Watch Ad</span>
+                                <span className="text-[12px] font-black uppercase italic text-vibrant-yellow">Watch Ad</span>
                               </>
                             )}
                           </div>
@@ -827,7 +996,7 @@ export function Lobby() {
                         <span className={`text-lg md:text-xl font-black uppercase italic text-center ${
                           selectedCharacter === charKey ? 'text-white' : 'text-white/40'
                         }`}>
-                          {charKey}
+                          {charKey.replace(/_/g, ' ')}
                         </span>
                         {!isUnlocked && <Lock size={14} className="text-white/20" />}
                       </div>

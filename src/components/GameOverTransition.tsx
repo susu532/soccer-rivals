@@ -8,7 +8,7 @@
  * sell copies of the Software without explicit permission.
  */
 import { motion } from 'motion/react';
-import { Trophy, Home } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
 
 interface GameOverTransitionProps {
@@ -21,7 +21,6 @@ interface GameOverTransitionProps {
 export function GameOverTransition({ message, score, isWorldCup, worldCupTeams }: GameOverTransitionProps) {
   const isBlueWin = message.includes('BLUE') || (isWorldCup && worldCupTeams?.blue && message.includes(worldCupTeams.blue.toUpperCase()));
   const isRedWin = message.includes('RED') || (isWorldCup && worldCupTeams?.red && message.includes(worldCupTeams.red.toUpperCase()));
-  const isDraw = message.includes('DRAW');
 
   return (
     <motion.div

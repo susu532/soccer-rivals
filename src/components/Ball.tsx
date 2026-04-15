@@ -104,6 +104,7 @@ export function Ball() {
           ctx.stroke();
           
           // Fill some hexes with glow
+          // eslint-disable-next-line
           const rand = Math.random();
           if (rand > 0.85) {
             const color = rand > 0.92 ? '#ff007f' : '#00ffff';

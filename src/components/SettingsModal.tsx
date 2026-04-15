@@ -7,6 +7,7 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Volume2, Monitor, Keyboard, Globe, Check, RotateCcw } from 'lucide-react';
 import { useGameStore } from '../store';
@@ -36,6 +37,31 @@ export function SettingsModal({ isOpen, onClose, minimal = false }: SettingsModa
       }
     }
   };
+
+  const [bindingKey, setBindingKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!bindingKey) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      const newKey = e.key.toLowerCase();
+      
+      // Don't allow Escape to be bound (it's for closing/canceling)
+      if (e.key === 'Escape') {
+        setBindingKey(null);
+        return;
+      }
+
+      const updatedBindings = { ...settings.keyBindings, [bindingKey]: newKey };
+      setSettings({ keyBindings: updatedBindings });
+      setBindingKey(null);
+      soundManager.playClick();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [bindingKey, settings.keyBindings, setSettings]);
 
   const resetBindings = () => {
     setSettings({
@@ -139,33 +165,56 @@ export function SettingsModal({ isOpen, onClose, minimal = false }: SettingsModa
               </section>
 
               {/* Key Bindings */}
-              {!minimal && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-white/60">
-                      <Keyboard size={16} />
-                      <h3 className="text-xs font-black uppercase tracking-widest">Key Bindings</h3>
-                    </div>
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-white/60">
+                    <Keyboard size={16} />
+                    <h3 className="text-xs font-black uppercase tracking-widest">Key Bindings</h3>
+                  </div>
+                  <button 
+                    onClick={resetBindings}
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase text-white/20 hover:text-vibrant-yellow transition-colors cursor-pointer"
+                  >
+                    <RotateCcw size={12} />
+                    Reset to Default
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(settings.keyBindings).map(([action, key]) => (
                     <button 
-                      onClick={resetBindings}
-                      className="flex items-center gap-1.5 text-[10px] font-black uppercase text-white/20 hover:text-vibrant-yellow transition-colors cursor-pointer"
+                      key={action} 
+                      onClick={() => setBindingKey(action)}
+                      className={`flex items-center justify-between p-3 px-4 rounded-xl border transition-all group cursor-pointer ${
+                        bindingKey === action 
+                          ? 'bg-vibrant-yellow/20 border-vibrant-yellow shadow-[0_0_15px_rgba(255,255,0,0.2)]' 
+                          : 'bg-white/5 border-white/5 hover:border-white/20'
+                      }`}
                     >
-                      <RotateCcw size={12} />
-                      Reset to Default
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(settings.keyBindings).map(([action, key]) => (
-                      <div key={action} className="flex items-center justify-between bg-white/5 p-3 px-4 rounded-xl border border-white/5">
-                        <span className="text-xs font-bold text-white/40 uppercase tracking-wider">{action}</span>
-                        <div className="min-w-[40px] h-8 bg-white/10 rounded-lg flex items-center justify-center border border-white/10 shadow-inner">
-                          <span className="text-vibrant-yellow font-black uppercase italic">{key === ' ' ? 'SPC' : key}</span>
-                        </div>
+                      <span className={`text-xs font-bold uppercase tracking-wider ${bindingKey === action ? 'text-vibrant-yellow' : 'text-white/40'}`}>
+                        {action}
+                      </span>
+                      <div className={`min-w-[50px] h-8 rounded-lg flex items-center justify-center border transition-all ${
+                        bindingKey === action 
+                          ? 'bg-vibrant-yellow text-black border-vibrant-yellow' 
+                          : 'bg-white/10 text-vibrant-yellow border-white/10 group-hover:bg-white/20'
+                      }`}>
+                        <span className="font-black uppercase italic text-xs">
+                          {bindingKey === action ? '...' : (key === ' ' ? 'SPC' : key)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+                    </button>
+                  ))}
+                </div>
+                {bindingKey && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-[10px] font-black uppercase italic text-vibrant-yellow animate-pulse"
+                  >
+                    Press any key to bind to {bindingKey}... (ESC to cancel)
+                  </motion.p>
+                )}
+              </section>
 
               {/* Display */}
               <section className="space-y-4">

@@ -7,7 +7,7 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
-import { Box, Cylinder } from '@react-three/drei';
+import { Cylinder } from '@react-three/drei';
 import { useMemo } from 'react';
 import * as THREE from 'three';
 

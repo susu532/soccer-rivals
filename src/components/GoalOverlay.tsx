@@ -7,7 +7,7 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { WORLD_CUP_COUNTRIES } from '../constants/countries';
 
 interface GoalOverlayProps {
@@ -21,13 +21,12 @@ interface GoalOverlayProps {
   worldCupTeams?: { red: string; blue: string };
 }
 
-export function GoalOverlay({ message, lastScorer, isWorldCup, worldCupTeams }: GoalOverlayProps) {
+export function GoalOverlay({ lastScorer, isWorldCup, worldCupTeams }: GoalOverlayProps) {
   const teamName = lastScorer?.team === 'blue' 
     ? (isWorldCup && worldCupTeams?.blue ? worldCupTeams.blue : 'BLUE')
     : (isWorldCup && worldCupTeams?.red ? worldCupTeams.red : 'RED');
   
   const teamColor = lastScorer?.team === 'blue' ? 'text-vibrant-cyan' : 'text-vibrant-pink';
-  const glowColor = lastScorer?.team === 'blue' ? 'shadow-vibrant-cyan/50' : 'shadow-vibrant-pink/50';
   const bgColor = lastScorer?.team === 'blue' ? 'bg-vibrant-cyan' : 'bg-vibrant-pink';
 
   const country = lastScorer?.country ? WORLD_CUP_COUNTRIES.find(c => c.name === lastScorer.country) : null;

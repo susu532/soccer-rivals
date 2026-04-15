@@ -24,7 +24,6 @@ export function DustTrail({ active, position, color = '#ffffff' }: { active: boo
   const particles = useRef<Particle[]>([]);
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const tempPos = useRef(new THREE.Vector3());
   const tempVel = useRef(new THREE.Vector3());
 
   useFrame((state, delta) => {

@@ -15,35 +15,39 @@ import { SkeletonUtils } from 'three-stdlib';
 import { PlayerState } from '../store';
 import { soundManager } from '../utils/audio';
 
-export const CHARACTERS: Record<string, { url: string; scale: number; yOffset: number; rotationOffset: [number, number, number]; animations: { idle: string; run: string; jump: string; kick: string } }> = {
-  robot: {
-    url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
-    scale: 0.4,
-    yOffset: -1.0,
-    rotationOffset: [0, 0, 0],
-    animations: { idle: 'Idle', run: 'Running', jump: 'Jump', kick: 'Punch' }
-  },
-  soldier: {
-    url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/Soldier.glb',
-    scale: 1.2,
-    yOffset: -1.0,
-    rotationOffset: [0, Math.PI, 0], // Soldier usually faces opposite
-    animations: { idle: 'Idle', run: 'Run', jump: 'Run', kick: 'Idle' }
-  },
-  fox: {
-    url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb',
-    scale: 0.01, // Further increased scale
-    yOffset: -0.5, // Adjusted yOffset to prevent burying
-    rotationOffset: [0, 0, 0], // Reset rotation to see if it's better
-    animations: { idle: 'Survey', run: 'Run', jump: 'Walk', kick: 'Survey' }
-  }
-};
+import { CHARACTERS } from '../constants/characters';
 
 export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
   const outerGroup = useRef<THREE.Group>(null);
   const group = useRef<THREE.Group>(null);
   const characterConfig = CHARACTERS[state.character] || CHARACTERS['robot'];
-  const { scene, animations } = useGLTF(characterConfig.url);
+  const { scene, animations: defaultAnimations } = useGLTF(characterConfig.url);
+  
+  const animations = useMemo(() => {
+    return defaultAnimations.map((anim, index) => {
+      const clone = anim.clone();
+      if (clone.name === 'mixamo.com') {
+        clone.name = `mixamo.com${index}`;
+      }
+      clone.tracks = clone.tracks.filter(track => !track.name.includes('morphTargetInfluences'));
+      clone.tracks.forEach(track => {
+        // Remove colons and duplicate suffixes (e.g. mixamorig:Hips_3 -> mixamorigHips)
+        // but preserve bone indices like b_Tail01 (no underscore before number)
+        track.name = track.name.replace(/:/g, '').replace(/_\d+(?=\.)/g, '');
+
+        // Remove root motion (horizontal movement) to prevent rubber-banding
+        if (track.name.match(/(Hips|Pelvis|Root)\.position/i)) {
+          const initialX = track.values[0];
+          const initialZ = track.values[2];
+          for (let i = 0; i < track.values.length; i += 3) {
+            track.values[i] = initialX;
+            track.values[i + 2] = initialZ;
+          }
+        }
+      });
+      return clone;
+    });
+  }, [defaultAnimations]);
   
   const clonedScene = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
@@ -52,19 +56,47 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
 
   useEffect(() => {
     clonedScene.traverse((child) => {
+      if ((child as THREE.Light).isLight) {
+        child.visible = false;
+        (child as THREE.Light).intensity = 0;
+      }
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
+        mesh.frustumCulled = false; // Prevent disappearing when animation moves outside bounding box
         // Only clone material if we haven't already
         if (!mesh.userData.materialCloned) {
-          mesh.material = (mesh.material as THREE.Material).clone();
+          if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map(m => m.clone());
+          } else {
+            mesh.material = (mesh.material as THREE.Material).clone();
+          }
           mesh.userData.materialCloned = true;
         }
-        if (mesh.material && 'color' in mesh.material) {
-           (mesh.material as THREE.MeshStandardMaterial).color.set(state.color);
+
+        // Adjust material for custom models to remove all shiny reflections
+        if (characterConfig.isCustom) {
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          materials.forEach(mat => {
+            if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+              mat.envMapIntensity = 0;
+              mat.metalness = 0;
+              mat.roughness = 1;
+              mat.emissive = new THREE.Color(0x000000);
+            }
+          });
+        }
+
+        if (!characterConfig.isCustom) {
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          materials.forEach(mat => {
+            if ('color' in mat) {
+              (mat as THREE.MeshStandardMaterial).color.set(state.color);
+            }
+          });
         }
       }
     });
-  }, [clonedScene, state.color]);
+  }, [clonedScene, state.color, characterConfig.isCustom]);
 
   const clonedSceneRef = useMemo(() => ({ current: clonedScene }), [clonedScene]);
   const { actions, names } = useAnimations(animations, clonedSceneRef);
@@ -124,16 +156,20 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
   useEffect(() => {
     if (finalActionName && actions[finalActionName]) {
       const action = actions[finalActionName];
-      action?.reset().fadeIn(0.1).play();
+      action?.reset().fadeIn(0.2).play(); // Increased fade-in for smoother transitions
       
-      // If it's a punch or jump, we don't want it to loop
+      // If it's a kick or jump, we don't want it to loop
       if (finalActionName === characterConfig.animations.kick || finalActionName === characterConfig.animations.jump) {
         action.setLoop(THREE.LoopOnce, 1);
+        // eslint-disable-next-line react-hooks/immutability
         action.clampWhenFinished = true;
+      } else {
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        action.clampWhenFinished = false;
       }
       
       return () => {
-        action?.fadeOut(0.1);
+        action?.fadeOut(0.2); // Increased fade-out
       };
     }
   }, [actions, finalActionName, characterConfig]);

@@ -7,9 +7,9 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sky, Environment, Html } from '@react-three/drei';
+import { Sky, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { Field } from './Field';
 import { Ball } from './Ball';
@@ -55,9 +55,9 @@ function CameraController() {
       
       if (document.pointerLockElement !== gl.domElement) {
         try {
-          const promise = gl.domElement.requestPointerLock?.() as any;
+          const promise = gl.domElement.requestPointerLock?.() as Promise<void> | undefined;
           if (promise && typeof promise.catch === 'function') {
-            promise.catch((e: any) => console.warn('Pointer lock failed:', e));
+            promise.catch((e: unknown) => console.warn('Pointer lock failed:', e));
           }
         } catch (e) {
           console.warn('Pointer lock failed:', e);

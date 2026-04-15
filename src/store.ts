@@ -61,7 +61,7 @@ interface StoreState {
   roomCodeToJoin: string | null;
   isWorldCup: boolean;
   playerName: string;
-  selectedCharacter: 'robot' | 'soldier' | 'fox';
+  selectedCharacter: 'robot' | 'fox' | 'cristiano ronaldo' | 'kobe' | 'lamin yamal';
   selectedWorldCupCountry: string | null;
   selectedTeam: 'red' | 'blue';
   coins: number;
@@ -91,7 +91,7 @@ interface StoreState {
   setIsWorldCup: (isWorldCup: boolean) => void;
   setJoinMode: (mode: 'queue' | 'create' | 'join' | 'training' | null, code?: string, difficulty?: 'easy' | 'medium' | 'hard' | 'pro') => void;
   setPlayerName: (name: string) => void;
-  setSelectedCharacter: (character: 'robot' | 'soldier' | 'fox') => void;
+  setSelectedCharacter: (character: 'robot' | 'fox' | 'cristiano ronaldo' | 'kobe' | 'lamin yamal') => void;
   setSelectedWorldCupCountry: (country: string | null) => void;
   setSelectedTeam: (team: 'red' | 'blue') => void;
   setSettings: (settings: Partial<StoreState['settings']>) => void;
