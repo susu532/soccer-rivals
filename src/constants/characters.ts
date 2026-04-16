@@ -40,7 +40,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
   },
   kobe: {
     url: '/Kobe.glb',
-    scale: 1.0,
+    scale: 1.2,
     yOffset: -1.0,
     rotationOffset: [0, 0, 0],
     animations: { idle: 'mixamo.com0', run: 'mixamo.com2', jump: 'mixamo.com1', kick: 'mixamo.com3' },
@@ -49,7 +49,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
   },
   'lamin yamal': {
     url: '/Lamin_Yamal.glb',
-    scale: 1.0,
+    scale: 1.2,
     yOffset: -1.0,
     rotationOffset: [0, 0, 0],
     animations: { idle: 'mixamo.com0', run: 'mixamo.com3', jump: 'mixamo.com1', kick: 'mixamo.com2' },
