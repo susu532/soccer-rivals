@@ -22,7 +22,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
   },
   fox: {
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb',
-    scale: 0.02, // Further increased scale
+    scale: 0.01, // Further increased scale
     yOffset: -0.5, // Adjusted yOffset to prevent burying
     rotationOffset: [0, 0, 0], // Reset rotation to see if it's better
     animations: { idle: 'Survey', run: 'Run', jump: 'Walk', kick: 'Survey' },
@@ -31,7 +31,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
   },
   'cristiano ronaldo': {
     url: '/Cristiano_Ronaldo.glb',
-    scale: 0.04,
+    scale: 0.032,
     yOffset: -1.0,
     rotationOffset: [0, 0, 0],
     animations: { idle: 'mixamo.com3', run: 'mixamo.com2', jump: 'mixamo.com1', kick: 'mixamo.com0' },
