@@ -7,6 +7,7 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
+import { CHARACTERS } from './constants/characters';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -186,12 +187,12 @@ export const useGameStore = create<StoreState>()(
       name: 'soccer-rivals-storage',
       partialize: (state) => ({
         playerName: state.playerName,
-        selectedCharacter: state.selectedCharacter,
         selectedWorldCupCountry: state.selectedWorldCupCountry,
         coins: state.coins,
         exp: state.exp,
-        unlockedCharacters: state.unlockedCharacters,
         settings: state.settings,
+        unlockedCharacters: state.unlockedCharacters.filter(c => CHARACTERS[c]?.unlockType !== 'ads'),
+        selectedCharacter: CHARACTERS[state.selectedCharacter]?.unlockType === 'ads' ? 'robot' : state.selectedCharacter,
       }),
     }
   )
