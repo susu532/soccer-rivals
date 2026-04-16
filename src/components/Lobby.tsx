@@ -109,7 +109,12 @@ function PlayerPreview() {
   const baseScale = window.innerWidth < 768 ? 0.45 : 0.6;
   const normalization = 1 / (CHARACTERS['robot']?.scale || 0.4);
   const normalizedScale = characterConfig.scale * normalization * baseScale;
-  const normalizedY = characterConfig.yOffset * normalization * baseScale;
+  let normalizedY = characterConfig.yOffset * normalization * baseScale;
+  
+  // Lower the fox specifically in the lobby
+  if (selectedCharacter === 'fox') {
+    normalizedY -= 1.5 * baseScale;
+  }
 
   return (
     <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
@@ -215,7 +220,12 @@ function CharacterModel({ charKey }: { charKey: string }) {
   // Normalize scale and position for icons
   const normalization = 1 / (CHARACTERS['robot']?.scale || 0.4);
   const iconScale = characterConfig.scale * normalization * 0.5;
-  const iconY = characterConfig.yOffset * normalization * 0.5;
+  let iconY = characterConfig.yOffset * normalization * 0.5;
+  
+  // Lower the fox specifically in the customization preview
+  if (charKey === 'fox') {
+    iconY -= 0.8;
+  }
 
   return (
     <group ref={group} dispose={null}>
