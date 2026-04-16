@@ -27,7 +27,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     rotationOffset: [0, 0, 0], // Reset rotation to see if it's better
     animations: { idle: 'Survey', run: 'Run', jump: 'Walk', kick: 'Survey' },
     unlockType: 'coins',
-    price: 2200
+    price: 1200
   },
   'cristiano ronaldo': {
     url: '/Cristiano_Ronaldo.glb',
