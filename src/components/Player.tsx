@@ -51,12 +51,6 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
   
   const clonedScene = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
-    clone.traverse((child) => {
-      // Clean node name to match track cleaning logic
-      if (child.name) {
-        child.name = child.name.replace(/:/g, '').replace(/_\d+$/g, '');
-      }
-    });
     return clone;
   }, [scene]);
 

@@ -67,15 +67,19 @@ function CameraController() {
 
     window.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('pointerlockchange', handlePointerLockChange);
-    gl.domElement.addEventListener('click', handleCanvasClick);
+    if (gl?.domElement) {
+      gl.domElement.addEventListener('click', handleCanvasClick);
+    }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
-      gl.domElement.removeEventListener('click', handleCanvasClick);
+      if (gl?.domElement) {
+        gl.domElement.removeEventListener('click', handleCanvasClick);
+      }
       
       // Ensure lock is released on unmount
-      if (document.pointerLockElement === gl.domElement) {
+      if (gl?.domElement && document.pointerLockElement === gl.domElement) {
         // Use a try-catch because exitPointerLock can sometimes fail if element is already gone
         try {
           document.exitPointerLock?.();

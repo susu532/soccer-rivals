@@ -6,6 +6,8 @@
   'use strict';
 
   // ===== 1. ANTI-IFRAME: Bust out of frames =====
+  // Disabled for AI Studio preview
+  /*
   if (window.top !== window.self) {
     try {
       window.top.location.href = window.self.location.href;
@@ -15,6 +17,7 @@
       document.title = '';
     }
   }
+  */
 
   // ===== 2. ANTI-RIGHT-CLICK =====
   document.addEventListener('contextmenu', function (e) {
