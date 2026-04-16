@@ -11,12 +11,48 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
+import javascriptObfuscator from 'vite-plugin-javascript-obfuscator';
 
-export default defineConfig(() => {
+export default defineConfig(({mode}) => {
   return {
     plugins: [
       react(), 
       tailwindcss(),
+      javascriptObfuscator({
+        include: [/\.(js|ts|tsx)$/],
+        exclude: [/node_modules/],
+        options: {
+          compact: true,
+          controlFlowFlattening: true,
+          controlFlowFlatteningThreshold: 0.5,
+          deadCodeInjection: true,
+          deadCodeInjectionThreshold: 0.2,
+          debugProtection: true,
+          debugProtectionInterval: 4000,
+          disableConsoleOutput: false,
+          identifierNamesGenerator: 'hexadecimal',
+          log: false,
+          numbersToExpressions: true,
+          renameGlobals: false,
+          selfDefending: true,
+          simplify: true,
+          stringArray: true,
+          stringArrayCallsTransform: true,
+          stringArrayCallsTransformThreshold: 0.5,
+          stringArrayEncoding: ['rc4'],
+          stringArrayIndexShift: true,
+          stringArrayRotate: true,
+          stringArrayShuffle: true,
+          stringArrayWrappersCount: 1,
+          stringArrayWrappersChainedCalls: true,
+          stringArrayWrappersParametersMaxCount: 2,
+          stringArrayWrappersType: 'variable',
+          stringArrayThreshold: 0.75,
+          transformObjectKeys: true,
+          unicodeEscapeSequence: false,
+          domainLock: ['soccer-rivals.vercel.app', 'localhost']
+        },
+      }),
     ],
 
     build: {
