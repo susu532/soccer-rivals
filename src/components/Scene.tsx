@@ -176,7 +176,7 @@ export function Scene() {
     <Canvas 
       shadows={{ type: THREE.PCFShadowMap }} 
       camera={{ position: [0, 15, 20], fov: 45 }}
-      dpr={[1, 2]} // Limit pixel ratio to 2 for performance
+      dpr={[1, 1.5]} // Limit pixel ratio to 1.5 for performance
       performance={{ min: 0.5 }} // Allow dynamic scaling
       gl={{ 
         antialias: true,

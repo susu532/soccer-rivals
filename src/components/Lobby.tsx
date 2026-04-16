@@ -246,7 +246,7 @@ function CharacterModel({ charKey }: { charKey: string }) {
 function CharacterIconPreview({ charKey }: { charKey: string }) {
   return (
     <div className="w-full h-full">
-      <Canvas camera={{ position: [0, 0, 2.5], fov: 35 }} gl={{ antialias: true }}>
+      <Canvas camera={{ position: [0, 0, 2.5], fov: 35 }} dpr={[1, 1.5]} gl={{ antialias: true }}>
         <ambientLight intensity={1.5} />
         <pointLight position={[5, 5, 5]} intensity={2} />
         <Environment preset="city" />
@@ -570,7 +570,7 @@ export function Lobby() {
         <div className={`w-full h-full transition-all duration-500 ${
           showCustomizeModal ? 'max-w-none max-h-none' : 'max-w-2xl max-h-[400px] md:max-h-[600px] -translate-y-10 md:translate-y-0'
         }`}>
-          <Canvas camera={{ position: [0, 0, 5], fov: 45 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
+          <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} gl={{ antialias: true, preserveDrawingBuffer: true }}>
             <ambientLight intensity={0.8} />
             <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2.5} color="#00ffff" />
             <pointLight position={[-10, -10, -10]} intensity={2} color="#9d00ff" />
