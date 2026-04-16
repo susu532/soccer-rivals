@@ -82,11 +82,14 @@ export function Player({ state, isMe }: { state: PlayerState; isMe: boolean }) {
               mat.metalness = 0;
               mat.roughness = 1;
               mat.emissive = new THREE.Color(0x000000);
+              
+              // Color the t-shirt for custom characters
+              if (mesh.name === 'Ch38_Shirt' || mat.name === 'mat7' || mat.name === 'mat1' || mesh.name === 'obj2') {
+                mat.color.set(state.color);
+              }
             }
           });
-        }
-
-        if (!characterConfig.isCustom) {
+        } else {
           const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           materials.forEach(mat => {
             if ('color' in mat) {
