@@ -22,7 +22,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
   },
   fox: {
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb',
-    scale: 0.014, // Further increased scale
+    scale: 0.01, // Further increased scale
     yOffset: -0.6, // Adjusted yOffset to prevent burying
     rotationOffset: [0, 0, 0], // Reset rotation to see if it's better
     animations: { idle: 'Survey', run: 'Run', jump: 'Walk', kick: 'Survey' },
