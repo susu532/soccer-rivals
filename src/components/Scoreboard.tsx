@@ -78,30 +78,30 @@ export function Scoreboard({ players }: ScoreboardProps) {
       initial={{ opacity: 0, scale: 0.95, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: 20 }}
-      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl z-[150] p-4 md:p-6"
+      className="fixed inset-0 z-[150] p-4 flex items-center justify-center safe-area-inset"
     >
-      <div className="bg-slate-950/80 backdrop-blur-2xl border border-white/10 rounded-3xl md:rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden">
+      <div className="bg-slate-950/90 backdrop-blur-3xl border border-white/10 rounded-3xl md:rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.9)] overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-transparent via-white/5 to-transparent">
+        <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-transparent via-white/5 to-transparent shrink-0">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="bg-vibrant-yellow p-1.5 md:p-2 rounded-lg md:rounded-xl text-black">
               <Trophy size={16} className="md:w-5 md:h-5" />
             </div>
             <div>
-              <h2 className="text-sm md:text-xl font-black italic text-white uppercase tracking-tighter">Match Statistics</h2>
-              <p className="text-[8px] md:text-[10px] text-white/40 font-bold uppercase tracking-widest">Live Performance Tracking</p>
+              <h2 className="text-xs sm:text-lg md:text-xl font-black italic text-white uppercase tracking-tighter">Match Statistics</h2>
+              <p className="text-[7px] md:text-[10px] text-white/40 font-bold uppercase tracking-widest leading-none">Live Performance Tracking</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-white/40 font-black uppercase italic">Match Time</span>
-              <span className="text-vibrant-yellow font-black italic">LIVE</span>
+              <span className="text-[8px] md:text-[10px] text-white/40 font-black uppercase italic">Match Time</span>
+              <span className="text-vibrant-yellow font-black italic text-xs md:text-base">LIVE</span>
             </div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-8">
+        {/* Content - Scrollable */}
+        <div className="p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-8 overflow-y-auto custom-scrollbar flex-1 min-h-0">
           <TeamSection 
             title={isWorldCup && worldCupTeams?.blue ? worldCupTeams.blue : "Blue Team"} 
             players={bluePlayers} 
@@ -118,19 +118,19 @@ export function Scoreboard({ players }: ScoreboardProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-black/40 border-t border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="px-4 py-3 md:px-6 md:py-4 bg-black/60 border-t border-white/5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3 md:gap-6">
             <div className="flex items-center gap-1.5">
-              <Target size={12} className="text-vibrant-cyan" />
-              <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">3pts / Goal</span>
+              <Target size={12} className="text-vibrant-cyan md:w-4 md:h-4" />
+              <span className="text-[8px] md:text-[10px] text-white/60 font-bold uppercase tracking-wider">3pts / Goal</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Zap size={12} className="text-vibrant-pink" />
-              <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">2pts / Assist</span>
+              <Zap size={12} className="text-vibrant-pink md:w-4 md:h-4" />
+              <span className="text-[8px] md:text-[10px] text-white/60 font-bold uppercase tracking-wider">Assist-2pt</span>
             </div>
           </div>
-          <div className="text-[10px] text-white/20 font-black italic uppercase tracking-[0.2em]">
-            Press TAB to toggle
+          <div className="text-[7px] md:text-[10px] text-white/20 font-black italic uppercase tracking-[0.2em] hidden sm:block">
+            Hold TAB to view
           </div>
         </div>
       </div>

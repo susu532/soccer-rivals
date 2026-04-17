@@ -20,6 +20,7 @@ import { Scoreboard } from './components/Scoreboard';
 import { SettingsModal } from './components/SettingsModal';
 import { MobileControls } from './components/MobileControls';
 import { useGameStore } from './store';
+import { useWindowSize } from './utils/hooks';
 import { soundManager } from './utils/audio';
 import { adManager } from './utils/ads';
 import { LogOut, X, Check, Trophy, Settings, Copy } from 'lucide-react';
@@ -46,6 +47,8 @@ export default function App() {
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [showInMatchSettings, setShowInMatchSettings] = useState(false);
   const [isTouchDevice] = useState(() => 'ontouchstart' in window || navigator.maxTouchPoints > 0);
+  const { width } = useWindowSize();
+  const isMobileSize = width < 1024;
   const [joystickInput, setJoystickInput] = useState({ x: 0, z: 0 });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const prevMatchStateRef = useRef(gameState.matchState);
@@ -103,9 +106,18 @@ export default function App() {
     return () => window.removeEventListener('click', handleClick);
   }, []);
 
-  // Handle music state based on lobby
+  // Handle music state and gameplay tracking based on lobby
   useEffect(() => {
     soundManager.setMusicState(inLobby);
+    
+    if (inLobby) {
+      // If we entered lobby, stop any gameplay tracking and notify load stopped
+      adManager.triggerLoadingStop();
+      adManager.triggerGameplayStop();
+    } else {
+      // If we left lobby to enter match
+      adManager.triggerGameplayStart();
+    }
   }, [inLobby]);
 
   // Handle match state sounds and ads
@@ -354,7 +366,7 @@ export default function App() {
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
@@ -375,118 +387,76 @@ export default function App() {
       <Scene />
       
       {/* UI Overlay */}
-      <div className="absolute top-0 left-0 w-full p-2 md:p-4 flex justify-between items-start pointer-events-none">
-        <div className="flex flex-col gap-2 md:gap-4">
-          <div className="bg-black/40 text-white p-2 md:p-6 rounded-lg md:rounded-2xl backdrop-blur-md border border-white/10 shadow-2xl">
-            <h1 className="text-xs sm:text-lg md:text-3xl font-black italic tracking-tighter mb-0.5 md:mb-4 text-transparent bg-clip-text bg-gradient-to-r from-vibrant-cyan to-vibrant-pink">
-              SOCCER RIVALS 3D
-            </h1>
-            {!(gameState.matchState === 'freeplay' && gameState.isWorldCup) && (
-              <div className="flex gap-3 md:gap-8 text-sm sm:text-lg md:text-2xl font-black italic">
-                <div className="text-vibrant-cyan drop-shadow-[0_0_10px_rgba(0,255,255,0.5)] flex items-center gap-1 md:gap-2">
-                  {gameState.isWorldCup && gameState.worldCupTeams?.blue && (
-                    <img 
-                      src={WORLD_CUP_COUNTRIES.find(c => c.name === gameState.worldCupTeams?.blue)?.flag} 
-                      alt={gameState.worldCupTeams.blue}
-                      className="w-4 h-3 md:w-6 md:h-4 object-cover rounded-sm"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  {gameState.isWorldCup && gameState.worldCupTeams?.blue ? gameState.worldCupTeams.blue : 'BLUE'}: {gameState.score.blue}
-                </div>
-                <div className="text-vibrant-pink drop-shadow-[0_0_10px_rgba(255,0,127,0.5)] flex items-center gap-1 md:gap-2">
-                  {gameState.isWorldCup && gameState.worldCupTeams?.red ? gameState.worldCupTeams.red : 'RED'}: {gameState.score.red}
-                  {gameState.isWorldCup && gameState.worldCupTeams?.red && (
-                    <img 
-                      src={WORLD_CUP_COUNTRIES.find(c => c.name === gameState.worldCupTeams?.red)?.flag} 
-                      alt={gameState.worldCupTeams.red}
-                      className="w-4 h-3 md:w-6 md:h-4 object-cover rounded-sm"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button 
-            onClick={() => setShowLeaveConfirm(true)}
-            className="pointer-events-auto bg-white/5 hover:bg-vibrant-orange/20 text-white/60 hover:text-vibrant-orange px-2 py-1 md:px-3 md:py-1.5 rounded-md md:rounded-lg border border-white/10 hover:border-vibrant-orange/30 backdrop-blur-md flex items-center gap-1.5 md:gap-2 font-black italic uppercase text-[8px] md:text-[10px] tracking-widest transition-all shadow-lg cursor-pointer w-fit"
-          >
-            <LogOut size={12} className="md:w-[14px] md:h-[14px]" />
-            Leave
-          </button>
-        </div>
-        
-        <div className="flex flex-col gap-2 md:gap-4 items-end pointer-events-auto">
-          {!inLobby && !showScoreboard && !showInMatchSettings && !showMatchTransition && gameState.matchState !== 'gameover' && gameState.matchState !== 'goal' && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              whileHover={{ rotate: 90, scale: 1.1 }}
-              onClick={() => setShowInMatchSettings(true)}
-              className="p-2 md:p-3 rounded-lg md:rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 text-white/60 hover:text-vibrant-cyan hover:border-vibrant-cyan/50 transition-all cursor-pointer shadow-xl group mb-1 md:mb-2"
-            >
-              <Settings size={18} className="md:w-[22px] md:h-[22px] group-hover:drop-shadow-[0_0_8px_rgba(0,255,255,0.5)]" />
-            </motion.button>
-          )}
-          
-          {roomId && isPrivate && (
-            <div className="bg-black/50 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg backdrop-blur-sm border border-white/10 shadow-lg pointer-events-auto flex flex-col items-end">
-              <span className="text-[8px] md:text-[10px] text-white/60 font-bold uppercase tracking-widest">Room</span>
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <span className="text-sm md:text-xl font-black tracking-widest text-vibrant-yellow select-all">{roomId}</span>
-                <button 
-                  onClick={handleCopyRoom}
-                  className="p-1 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-vibrant-cyan"
-                  title="Copy Room Code"
-                >
-                  {copied ? <Check size={12} className="text-vibrant-cyan md:w-[14px] md:h-[14px]" /> : <Copy size={12} className="md:w-[14px] md:h-[14px]" />}
-                </button>
-              </div>
+      <div className="absolute inset-x-0 top-0 p-2 sm:p-4 flex flex-col items-center pointer-events-none safe-area-inset z-40">
+        <div className="flex items-center bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto">
+          {/* Blue team block */}
+          <div className="flex items-center gap-2 sm:gap-4 pl-4 sm:pl-6 pr-4 sm:pr-8 py-2 md:py-3 bg-vibrant-cyan/5">
+            <div className="flex flex-col items-end leading-none">
+              <span className="text-[7px] sm:text-[10px] text-vibrant-cyan font-black uppercase italic tracking-widest opacity-80">BLUE</span>
+              <span className="text-[10px] sm:text-lg font-black italic text-white truncate max-w-[60px] sm:max-w-[120px] uppercase">
+                {gameState.isWorldCup && gameState.worldCupTeams?.blue ? gameState.worldCupTeams.blue : 'TEAM BLUE'}
+              </span>
             </div>
-          )}
-          <div className="hidden md:block bg-black/50 text-white p-4 rounded-lg backdrop-blur-sm text-sm">
-            <h2 className="font-bold mb-2">Controls</h2>
-            <ul className="space-y-1">
-              <li>
-                <kbd className="bg-gray-700 px-2 py-1 rounded uppercase">
-                  {settings.keyBindings.forward}{settings.keyBindings.left}{settings.keyBindings.backward}{settings.keyBindings.right}
-                </kbd> Move
-              </li>
-              <li>
-                <kbd className="bg-gray-700 px-2 py-1 rounded uppercase">
-                  {settings.keyBindings.kick === ' ' ? 'SPACE' : settings.keyBindings.kick}
-                </kbd> / Click Kick
-              </li>
-              <li>
-                <kbd className="bg-gray-700 px-2 py-1 rounded uppercase">
-                  {settings.keyBindings.jump === ' ' ? 'SPACE' : settings.keyBindings.jump}
-                </kbd> Jump
-              </li>
-              <li><kbd className="bg-gray-700 px-2 py-1 rounded">T</kbd> Toggle Chat</li>
-              <li><kbd className="bg-gray-700 px-2 py-1 rounded">Mouse</kbd> Rotate Camera</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Center Timer */}
-      <div className="absolute top-2 md:top-4 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
-        <div className="relative">
-          <div className="bg-black/40 text-vibrant-yellow px-4 py-1.5 md:px-8 md:py-3 rounded-xl md:rounded-2xl backdrop-blur-md border border-white/10 text-xl md:text-4xl font-black italic shadow-2xl flex items-center gap-2">
-            {gameState.isOvertime && (
-              <span className="text-[10px] md:text-xs bg-vibrant-pink text-white px-1.5 py-0.5 rounded uppercase not-italic tracking-tighter animate-pulse">OT</span>
+            {gameState.isWorldCup && gameState.worldCupTeams?.blue && (
+              <div className="w-5 h-3 sm:w-8 sm:h-5 rounded-sm overflow-hidden shadow-md hidden sm:block">
+                <img 
+                  src={WORLD_CUP_COUNTRIES.find(c => c.name === gameState.worldCupTeams?.blue)?.flag} 
+                  alt={gameState.worldCupTeams.blue}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             )}
-            {gameState.matchState === 'countdown' ? '3:00' : formatTime(gameState.timer)}
+            <div className="text-xl sm:text-4xl font-black italic text-vibrant-cyan drop-shadow-[0_0_12px_rgba(0,255,255,0.6)] tabular-nums">
+              {gameState.score.blue}
+            </div>
+          </div>
+
+          {/* Time block */}
+          <div className="flex flex-col items-center px-4 sm:px-8 border-x border-white/10 bg-black/20">
+            <div className={`text-[8px] sm:text-[10px] font-black uppercase italic tracking-widest leading-none mb-0.5 sm:mb-1 ${gameState.isOvertime ? 'text-vibrant-pink animate-pulse' : 'text-white/40'}`}>
+              {gameState.isOvertime ? 'OVERTIME' : 'TIME'}
+            </div>
+            <div className={`text-lg sm:text-3xl font-black italic font-mono tabular-nums leading-none flex items-center gap-1 sm:gap-2 ${gameState.timer < 10 && gameState.timer > 0 ? 'text-vibrant-pink animate-pulse' : 'text-white'}`}>
+              {gameState.isOvertime && <span className="text-[10px] sm:text-xs">OT+</span>}
+              {formatTime(gameState.timer)}
+            </div>
+          </div>
+
+          {/* Red team block */}
+          <div className="flex items-center gap-2 sm:gap-4 pl-4 sm:pl-8 pr-4 sm:pr-6 py-2 md:py-3 bg-vibrant-pink/5">
+            <div className="text-xl sm:text-4xl font-black italic text-vibrant-pink drop-shadow-[0_0_12px_rgba(255,0,127,0.6)] tabular-nums">
+              {gameState.score.red}
+            </div>
+            {gameState.isWorldCup && gameState.worldCupTeams?.red && (
+              <div className="w-5 h-3 sm:w-8 sm:h-5 rounded-sm overflow-hidden shadow-md hidden sm:block">
+                <img 
+                  src={WORLD_CUP_COUNTRIES.find(c => c.name === gameState.worldCupTeams?.red)?.flag} 
+                  alt={gameState.worldCupTeams.red}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            )}
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-[7px] sm:text-[10px] text-vibrant-pink font-black uppercase italic tracking-widest opacity-80">RED</span>
+              <span className="text-[10px] sm:text-lg font-black italic text-white truncate max-w-[60px] sm:max-w-[120px] uppercase">
+                {gameState.isWorldCup && gameState.worldCupTeams?.red ? gameState.worldCupTeams.red : 'TEAM RED'}
+              </span>
+            </div>
           </div>
         </div>
-        
+
+        {/* Global Messages (Waiting/Freeplay/Countdown) */}
         {(gameState.matchState === 'waiting' || gameState.matchState === 'freeplay') && (
-          <div className="mt-1 md:mt-2 text-xs md:text-lg font-bold text-white/80 animate-pulse bg-black/40 px-3 py-1 md:px-4 md:py-1.5 rounded-full backdrop-blur-md border border-white/10 whitespace-pre-line text-center">
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mt-2 md:mt-4 text-[10px] sm:text-lg font-black uppercase italic text-white/80 animate-pulse bg-black/40 px-4 py-1 sm:px-6 sm:py-2 rounded-full backdrop-blur-md border border-white/10 text-center shadow-xl flex items-center gap-2"
+          >
+            {gameState.isOvertime && <span className="text-vibrant-pink">OVERTIME!</span>}
             {gameState.message}
-          </div>
+          </motion.div>
         )}
 
         <AnimatePresence>
@@ -497,12 +467,88 @@ export default function App() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.5 }}
               transition={{ duration: 0.3 }}
-              className="mt-2 md:mt-4 text-5xl md:text-8xl font-black text-vibrant-yellow drop-shadow-[0_0_30px_rgba(255,255,0,0.8)] italic"
+              className="mt-4 md:mt-8 text-6xl md:text-9xl font-black text-vibrant-yellow drop-shadow-[0_0_30px_rgba(255,255,0,0.8)] italic"
             >
               {gameState.timer}
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Floating Controls Overlay (Icons & Room Info) */}
+      <div className="absolute inset-0 pointer-events-none p-4 safe-area-inset z-30">
+        {/* Top Left: Leave */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2">
+          {!showScoreboard && !showInMatchSettings && (
+            <button 
+              onClick={() => setShowLeaveConfirm(true)}
+              className="pointer-events-auto p-2 sm:px-4 sm:py-2 bg-black/40 hover:bg-vibrant-orange rounded-full border border-white/10 text-white/60 hover:text-white backdrop-blur-md transition-all cursor-pointer shadow-lg flex items-center gap-2 group"
+            >
+              <LogOut size={16} />
+              <span className="hidden sm:inline font-black uppercase italic text-xs tracking-wider">Leave</span>
+            </button>
+          )}
+        </div>
+
+        {/* Top Right: Settings & Room Info */}
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-3">
+          {!showScoreboard && !showInMatchSettings && (
+            <button 
+              onClick={() => setShowInMatchSettings(true)}
+              className="pointer-events-auto p-2 sm:p-3 bg-black/40 hover:bg-vibrant-cyan rounded-full border border-white/10 text-white/60 hover:text-white backdrop-blur-md transition-all cursor-pointer shadow-lg"
+            >
+              <Settings size={18} />
+            </button>
+          )}
+          
+          {roomId && isPrivate && (
+            <div className="bg-black/40 text-white px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto flex flex-col items-end">
+              <span className="text-[8px] sm:text-[10px] text-white/40 font-black uppercase italic tracking-widest">PRIVATE ROOM CODE</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm sm:text-lg font-black tracking-widest text-vibrant-yellow select-all">{roomId}</span>
+                <button 
+                  onClick={handleCopyRoom}
+                  className="p-1 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-vibrant-cyan"
+                >
+                  {copied ? <Check size={14} className="text-vibrant-cyan" /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Left: Controls Info (Desktop) */}
+        {!isTouchDevice && (
+          <div className="absolute bottom-24 left-4 hidden md:block bg-black/40 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-2xl pointer-events-auto">
+            <h2 className="text-[10px] font-black italic uppercase tracking-widest text-white/40 mb-3 border-b border-white/5 pb-1">Controls</h2>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <div className="flex items-center gap-2">
+                <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">{settings.keyBindings.forward}{settings.keyBindings.left}{settings.keyBindings.backward}{settings.keyBindings.right}</kbd>
+                <span className="text-[10px] text-white/60 font-black uppercase italic">Move</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">{settings.keyBindings.kick === ' ' ? 'SPC' : settings.keyBindings.kick}</kbd>
+                <span className="text-[10px] text-white/60 font-black uppercase italic">Kick</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">{settings.keyBindings.jump === ' ' ? 'SPC' : settings.keyBindings.jump}</kbd>
+                <span className="text-[10px] text-white/60 font-black uppercase italic">Jump</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">T</kbd>
+                <span className="text-[10px] text-white/60 font-black uppercase italic">Chat</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Click</kbd>
+                <span className="text-[10px] text-white/60 font-black uppercase italic">Kick</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Mouse</kbd>
+                <span className="text-[10px] text-white/60 font-black uppercase italic">Camera</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Center Message */}
@@ -520,7 +566,7 @@ export default function App() {
       <Chat socket={socket} />
 
       {/* Mobile Controls */}
-      {!inLobby && (isTouchDevice || settings.forceMobileControls) && (
+      {!inLobby && (isTouchDevice || isMobileSize || settings.forceMobileControls) && (
         <MobileControls 
           onMove={(x, y) => setJoystickInput({ x, z: -y })}
           onStop={() => setJoystickInput({ x: 0, z: 0 })}
