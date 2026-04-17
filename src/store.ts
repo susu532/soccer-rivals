@@ -185,7 +185,6 @@ export const useGameStore = create<StoreState>()(
     }),
     {
       name: 'soccer-rivals-storage',
-      storage: createJSONStorage(() => crazyGamesStorage),
       partialize: (state) => ({
         playerName: state.playerName,
         selectedWorldCupCountry: state.selectedWorldCupCountry,

@@ -14,7 +14,6 @@ class SoundManager {
   private volume: number = 0.5;
   
   private isMusicPlaying = false;
-  private isMuted = false;
   private nextNoteTime = 0;
   private musicStep = 0;
   private musicTimer: number | null = null;
@@ -24,7 +23,7 @@ class SoundManager {
       this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       this.masterGain = this.ctx.createGain();
       this.masterGain.connect(this.ctx.destination);
-      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -93,17 +92,10 @@ class SoundManager {
   setVolume(volume: number) {
     this.volume = volume;
     if (this.ctx && this.masterGain) {
-      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : volume, this.ctx.currentTime);
+      this.masterGain.gain.value = volume;
     }
-    if (this.musicGain && this.ctx) {
-      this.musicGain.gain.setValueAtTime(volume * 0.15, this.ctx.currentTime);
-    }
-  }
-
-  setMuted(muted: boolean) {
-    this.isMuted = muted;
-    if (this.ctx && this.masterGain) {
-      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
+    if (this.musicGain) {
+      this.musicGain.gain.value = volume * 0.15;
     }
   }
 
