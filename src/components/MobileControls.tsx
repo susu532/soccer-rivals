@@ -7,6 +7,7 @@
  * You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software without explicit permission.
  */
+import React from 'react';
 import { Joystick } from 'react-joystick-component';
 import { motion } from 'motion/react';
 import { Zap, ArrowUp } from 'lucide-react';
@@ -19,7 +20,7 @@ interface MobileControlsProps {
   onJump: (active: boolean) => void;
 }
 
-export function MobileControls({ onMove, onStop, onKick, onJump }: MobileControlsProps) {
+export const MobileControls = React.memo(function MobileControls({ onMove, onStop, onKick, onJump }: MobileControlsProps) {
   const { width, height } = useWindowSize();
   const isLandscape = width > height;
 
@@ -76,7 +77,7 @@ export function MobileControls({ onMove, onStop, onKick, onJump }: MobileControl
       </div>
     </div>
   );
-}
+});
 
 
 /**

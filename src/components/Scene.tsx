@@ -171,15 +171,16 @@ function GlobalEffects() {
 export function Scene() {
   const gameState = useGameStore((state) => state.gameState);
   const myId = useGameStore((state) => state.myId);
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   return (
     <Canvas 
-      shadows={{ type: THREE.PCFShadowMap }} 
+      shadows={isMobile ? false : { type: THREE.PCFShadowMap }} 
       camera={{ position: [0, 15, 20], fov: 45 }}
-      dpr={[1, 1.5]} // Limit pixel ratio to 1.5 for performance
+      dpr={isMobile ? 1 : [1, 1.5]}
       performance={{ min: 0.5 }} // Allow dynamic scaling
       gl={{ 
-        antialias: true,
+        antialias: !isMobile,
         powerPreference: "high-performance",
         preserveDrawingBuffer: false
       }}
@@ -188,16 +189,16 @@ export function Scene() {
       <fog attach="fog" args={["#87ceeb", 30, 100]} />
       <Sky sunPosition={[100, 20, 100]} turbidity={0.3} rayleigh={0.5} />
       
-      <ambientLight intensity={0.8} color="#ffffff" />
+      <ambientLight intensity={isMobile ? 1.0 : 0.8} color="#ffffff" />
       
       {/* Main Sun Light */}
       <directionalLight
-        castShadow
+        castShadow={!isMobile}
         position={[50, 50, 30]}
         intensity={1.5}
         color="#fff5b6"
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={isMobile ? 512 : 2048}
+        shadow-mapSize-height={isMobile ? 512 : 2048}
         shadow-camera-far={150}
         shadow-camera-left={-30}
         shadow-camera-right={30}
@@ -214,12 +215,16 @@ export function Scene() {
       />
 
       {/* Stadium Lights (Decorative/Fill) */}
-      <pointLight position={[20, 15, -20]} intensity={1.5} color="#ffffff" distance={50} />
-      <pointLight position={[-20, 15, 20]} intensity={1.5} color="#ffffff" distance={50} />
+      {!isMobile && (
+        <>
+          <pointLight position={[20, 15, -20]} intensity={1.5} color="#ffffff" distance={50} />
+          <pointLight position={[-20, 15, 20]} intensity={1.5} color="#ffffff" distance={50} />
+        </>
+      )}
 
       <Field />
       <Ball />
-      <Environment preset="apartment" />
+      {!isMobile && <Environment preset="apartment" />}
       
       {Object.values(gameState.players).map((player) => (
         <Player key={player.id} state={player} isMe={player.id === myId} />

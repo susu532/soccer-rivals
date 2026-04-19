@@ -46,13 +46,18 @@ export function DustTrail({ active, position, color = '#ffffff' }: { active: boo
     }
 
     // Update particles
-    particles.current = particles.current.filter(p => {
+    let aliveCount = 0;
+    for (let i = 0; i < particles.current.length; i++) {
+      const p = particles.current[i];
       p.life += delta;
       tempVel.current.copy(p.velocity).multiplyScalar(delta);
       p.position.add(tempVel.current);
       p.velocity.y -= 0.1 * delta; // slight gravity
-      return p.life < p.maxLife;
-    });
+      if (p.life < p.maxLife) {
+        particles.current[aliveCount++] = p;
+      }
+    }
+    particles.current.length = aliveCount;
 
     // Update instanced mesh
     const maxCount = 100;
@@ -70,7 +75,7 @@ export function DustTrail({ active, position, color = '#ffffff' }: { active: boo
 
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, 100]}>
-      <sphereGeometry args={[1, 8, 8]} />
+      <sphereGeometry args={[1, 4, 4]} />
       <meshStandardMaterial color={color} transparent opacity={0.6} />
     </instancedMesh>
   );
@@ -106,13 +111,18 @@ export function BurstEffect({ position, color = '#ffffff', count = 20, trigger =
     }
 
     // Update particles
-    particles.current = particles.current.filter(p => {
+    let aliveCount = 0;
+    for (let i = 0; i < particles.current.length; i++) {
+      const p = particles.current[i];
       p.life += delta;
       tempVel.current.copy(p.velocity).multiplyScalar(delta);
       p.position.add(tempVel.current);
       p.velocity.y -= 9.8 * delta; // gravity
-      return p.life < p.maxLife;
-    });
+      if (p.life < p.maxLife) {
+        particles.current[aliveCount++] = p;
+      }
+    }
+    particles.current.length = aliveCount;
 
     // Update instanced mesh
     const maxCount = 500;
@@ -130,7 +140,7 @@ export function BurstEffect({ position, color = '#ffffff', count = 20, trigger =
 
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, 500]}>
-      <sphereGeometry args={[1, 8, 8]} />
+      <sphereGeometry args={[1, 4, 4]} />
       <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} transparent opacity={0.8} />
     </instancedMesh>
   );
