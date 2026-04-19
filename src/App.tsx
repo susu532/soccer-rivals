@@ -12,7 +12,7 @@ import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Scene } from './components/Scene';
 import { Lobby } from './components/Lobby';
-import { Chat } from './components/Chat';
+
 import { MatchTransition } from './components/MatchTransition';
 import { GameOverTransition } from './components/GameOverTransition';
 import { GoalOverlay } from './components/GoalOverlay';
@@ -548,10 +548,7 @@ export default function App() {
                 <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">{settings.keyBindings.jump === ' ' ? 'SPC' : settings.keyBindings.jump}</kbd>
                 <span className="text-[10px] text-white/60 font-black uppercase italic">Jump</span>
               </div>
-              <div className="flex items-center gap-2">
-                <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">T</kbd>
-                <span className="text-[10px] text-white/60 font-black uppercase italic">Chat</span>
-              </div>
+           
               <div className="flex items-center gap-2">
                 <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Click</kbd>
                 <span className="text-[10px] text-white/60 font-black uppercase italic">Kick</span>
@@ -576,8 +573,7 @@ export default function App() {
           />
         )}
       </AnimatePresence>
-      {/* Chat Section */}
-      <Chat socket={socket} />
+    
 
       {/* Mobile Controls */}
       {!inLobby && (isTouchDevice || isMobileSize || settings.forceMobileControls) && (
