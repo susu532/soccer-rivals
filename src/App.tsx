@@ -330,9 +330,10 @@ export default function App() {
         const joystickZ = joystickInput.z;
         const magnitude = Math.sqrt(joystickX * joystickX + joystickZ * joystickZ);
         
-        // The library returns values up to the radius (size/2)
-        const radius = window.innerWidth < 640 ? 40 : 50;
-        const deadzone = 5;
+      // Auto-detect if the library is returning raw pixels (e.g. max 50) or normalized floats (e.g. max 1)
+        const isNormalized = magnitude > 0 && magnitude <= 1.5;
+        const radius = isNormalized ? 1 : (window.innerWidth < 640 ? 40 : 55);
+        const deadzone = isNormalized ? 0.1 : 5;
 
         if (magnitude > deadzone) {
           // Normalize and scale to 0-1 range
@@ -377,52 +378,70 @@ export default function App() {
     <div className="w-full h-screen relative bg-gray-900 overflow-hidden">
       <Scene />
       
-      {/* UI Overlay */}
-      <div className="absolute inset-x-0 top-0 p-2 sm:p-4 flex flex-col items-center pointer-events-none safe-area-inset z-40">
+       {/* UI Overlay */}
+        <div className="absolute inset-x-0 top-0 p-1.5 sm:p-4 flex flex-col items-center pointer-events-none safe-area-inset z-40">
         <div className="flex items-center bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto">
           {/* Blue team block */}
-          <div className="flex items-center gap-2 sm:gap-4 pl-4 sm:pl-6 pr-4 sm:pr-8 py-2 md:py-3 bg-vibrant-cyan/5">
+          <div className="flex items-center gap-1.5 sm:gap-4 pl-3 sm:pl-6 pr-3 sm:pr-8 py-1 sm:py-3 bg-vibrant-cyan/5">
             <div className="flex flex-col items-end leading-none">
-              <span className="text-[7px] sm:text-[10px] text-vibrant-cyan font-black uppercase italic tracking-widest opacity-80">BLUE</span>
-              <span className="text-[10px] sm:text-lg font-black italic text-white truncate max-w-[60px] sm:max-w-[120px] uppercase">
-                {gameState.isWorldCup && gameState.worldCupTeams?.blue ? gameState.worldCupTeams.blue : 'TEAM BLUE'}
+              <span className="text-[6px] sm:text-[10px] text-vibrant-cyan font-black uppercase italic tracking-widest opacity-80">
+                BLUE
+              </span>
+              <span className="text-[9px] sm:text-lg font-black italic text-white truncate max-w-[50px] sm:max-w-[120px] uppercase">
+                {gameState.isWorldCup && gameState.worldCupTeams?.blue
+                  ? gameState.worldCupTeams.blue
+                  : "TEAM BLUE"}
               </span>
             </div>
             {gameState.isWorldCup && gameState.worldCupTeams?.blue && (
-              <div className="w-5 h-3 sm:w-8 sm:h-5 rounded-sm overflow-hidden shadow-md hidden sm:block">
-                <img 
-                  src={WORLD_CUP_COUNTRIES.find(c => c.name === gameState.worldCupTeams?.blue)?.flag} 
+              <div className="w-4 h-2.5 sm:w-8 sm:h-5 rounded-sm overflow-hidden shadow-md hidden sm:block">
+                <img
+                  src={
+                    WORLD_CUP_COUNTRIES.find(
+                      (c) => c.name === gameState.worldCupTeams?.blue,
+                    )?.flag
+                  }
                   alt={gameState.worldCupTeams.blue}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
               </div>
             )}
-            <div className="text-xl sm:text-4xl font-black italic text-vibrant-cyan drop-shadow-[0_0_12px_rgba(0,255,255,0.6)] tabular-nums">
+            <div className="text-lg sm:text-4xl font-black italic text-vibrant-cyan drop-shadow-[0_0_12px_rgba(0,255,255,0.6)] tabular-nums">
               {gameState.score.blue}
             </div>
           </div>
 
           {/* Time block */}
-          <div className="flex flex-col items-center px-4 sm:px-8 border-x border-white/10 bg-black/20">
-            <div className={`text-[8px] sm:text-[10px] font-black uppercase italic tracking-widest leading-none mb-0.5 sm:mb-1 ${gameState.isOvertime ? 'text-vibrant-pink animate-pulse' : 'text-white/40'}`}>
-              {gameState.isOvertime ? 'OVERTIME' : 'TIME'}
+          <div className="flex flex-col items-center px-2.5 sm:px-8 border-x border-white/10 bg-black/20">
+            <div
+              className={`text-[7px] sm:text-[10px] font-black uppercase italic tracking-widest leading-none mb-0.5 sm:mb-1 ${gameState.isOvertime ? "text-vibrant-pink animate-pulse" : "text-white/40"}`}
+            >
+              {gameState.isOvertime ? "OVERTIME" : "TIME"}
             </div>
-            <div className={`text-lg sm:text-3xl font-black italic font-mono tabular-nums leading-none flex items-center gap-1 sm:gap-2 ${gameState.timer < 10 && gameState.timer > 0 ? 'text-vibrant-pink animate-pulse' : 'text-white'}`}>
-              {gameState.isOvertime && <span className="text-[10px] sm:text-xs">OT+</span>}
+            <div
+              className={`text-base sm:text-3xl font-black italic font-mono tabular-nums leading-none flex items-center gap-1 sm:gap-2 ${gameState.timer < 10 && gameState.timer > 0 ? "text-vibrant-pink animate-pulse" : "text-white"}`}
+            >
+              {gameState.isOvertime && (
+                <span className="text-[9px] sm:text-xs">OT+</span>
+              )}
               {formatTime(gameState.timer)}
             </div>
           </div>
 
           {/* Red team block */}
-          <div className="flex items-center gap-2 sm:gap-4 pl-4 sm:pl-8 pr-4 sm:pr-6 py-2 md:py-3 bg-vibrant-pink/5">
-            <div className="text-xl sm:text-4xl font-black italic text-vibrant-pink drop-shadow-[0_0_12px_rgba(255,0,127,0.6)] tabular-nums">
+          <div className="flex items-center gap-1.5 sm:gap-4 pl-3 sm:pl-8 pr-3 sm:pr-6 py-1 sm:py-3 bg-vibrant-pink/5">
+            <div className="text-lg sm:text-4xl font-black italic text-vibrant-pink drop-shadow-[0_0_12px_rgba(255,0,127,0.6)] tabular-nums">
               {gameState.score.red}
             </div>
             {gameState.isWorldCup && gameState.worldCupTeams?.red && (
-              <div className="w-5 h-3 sm:w-8 sm:h-5 rounded-sm overflow-hidden shadow-md hidden sm:block">
-                <img 
-                  src={WORLD_CUP_COUNTRIES.find(c => c.name === gameState.worldCupTeams?.red)?.flag} 
+              <div className="w-4 h-2.5 sm:w-8 sm:h-5 rounded-sm overflow-hidden shadow-md hidden sm:block">
+                <img
+                  src={
+                    WORLD_CUP_COUNTRIES.find(
+                      (c) => c.name === gameState.worldCupTeams?.red,
+                    )?.flag
+                  }
                   alt={gameState.worldCupTeams.red}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -430,9 +449,13 @@ export default function App() {
               </div>
             )}
             <div className="flex flex-col items-start leading-none">
-              <span className="text-[7px] sm:text-[10px] text-vibrant-pink font-black uppercase italic tracking-widest opacity-80">RED</span>
-              <span className="text-[10px] sm:text-lg font-black italic text-white truncate max-w-[60px] sm:max-w-[120px] uppercase">
-                {gameState.isWorldCup && gameState.worldCupTeams?.red ? gameState.worldCupTeams.red : 'TEAM RED'}
+              <span className="text-[6px] sm:text-[10px] text-vibrant-pink font-black uppercase italic tracking-widest opacity-80">
+                RED
+              </span>
+              <span className="text-[9px] sm:text-lg font-black italic text-white truncate max-w-[50px] sm:max-w-[120px] uppercase">
+                {gameState.isWorldCup && gameState.worldCupTeams?.red
+                  ? gameState.worldCupTeams.red
+                  : "TEAM RED"}
               </span>
             </div>
           </div>
